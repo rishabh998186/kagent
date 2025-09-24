@@ -628,7 +628,9 @@ export function AddServerDialog({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-1">
-                    <Label htmlFor="command-prefix">Command Prefix (Optional)</Label>
+                    <Label htmlFor="command-prefix">
+                      Command Prefix (Optional)
+                    </Label>
                   </div>
                   <Input
                     id="command-prefix"
