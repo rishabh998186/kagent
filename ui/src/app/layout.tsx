@@ -20,21 +20,27 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <TooltipProvider>
-      <AgentsProvider>
-        <html lang="en" className="">
-          <body className={`${geistSans.className} flex flex-col h-screen overflow-hidden`}>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.className} flex flex-col h-screen overflow-hidden`} suppressHydrationWarning>
+        <ThemeProvider 
+          attribute="class" 
+          defaultTheme="system" 
+          enableSystem 
+          disableTransitionOnChange
+          storageKey="kagent-theme"
+        >
+          <TooltipProvider>
+            <AgentsProvider>
               <AppInitializer>
                 <Header />
                 <main className="flex-1 overflow-y-scroll w-full mx-auto">{children}</main>
                 <Footer />
               </AppInitializer>
               <Toaster richColors/>
-            </ThemeProvider>
-          </body>
-        </html>
-      </AgentsProvider>
-    </TooltipProvider>
+            </AgentsProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

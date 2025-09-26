@@ -82,13 +82,20 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
       const agentsResult = await getAgents();
 
       if (!agentsResult.data || agentsResult.error) {
-        throw new Error(agentsResult.error || "Failed to fetch agents");
+        console.warn('Failed to fetch agents:', agentsResult.error || 'No data returned');
+        // Set empty array instead of throwing error to prevent UI crashes
+        setAgents([]);
+        setError('Failed to fetch agents - backend may not be available');
+        return;
       }
 
       setAgents(agentsResult.data);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      console.error("Error fetching agents:", err);
+      // Set empty array instead of throwing error to prevent UI crashes
+      setAgents([]);
+      setError(err instanceof Error ? err.message : "Failed to fetch agents");
     } finally {
       setLoading(false);
     }
@@ -98,14 +105,20 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
     try {
       const response = await getModelConfigs();
       if (!response.data || response.error) {
-        throw new Error(response.error || "Failed to fetch models");
+        console.warn('Failed to fetch models:', response.error || 'No data returned');
+        // Set empty array instead of throwing error to prevent UI crashes
+        setModels([]);
+        setError('Failed to fetch models - backend may not be available');
+        return;
       }
 
       setModels(response.data);
       setError("");
     } catch (err) {
       console.error("Error fetching models:", err);
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      // Set empty array instead of throwing error to prevent UI crashes
+      setModels([]);
+      setError(err instanceof Error ? err.message : "Failed to fetch models");
     } finally {
       setLoading(false);
     }
@@ -115,11 +128,14 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
     try {
       setLoading(true);
       const response = await getTools();
-      setTools(response);
+      // getTools() already handles errors internally and returns empty array on failure
+      setTools(response || []);
       setError("");
     } catch (err) {
       console.error("Error fetching tools:", err);
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      // Set empty array instead of throwing error to prevent UI crashes
+      setTools([]);
+      setError(err instanceof Error ? err.message : "Failed to fetch tools");
     } finally {
       setLoading(false);
     }
@@ -244,11 +260,15 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
     }
   }, [fetchAgents, validateAgentData]);
 
-  // Initial fetches
+  // Initial fetches with delay to prevent hydration issues
   useEffect(() => {
-    fetchAgents();
-    fetchTools();
-    fetchModels();
+    const timeoutId = setTimeout(() => {
+      fetchAgents();
+      fetchTools();
+      fetchModels();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [fetchAgents, fetchTools, fetchModels]);
 
   const value = {

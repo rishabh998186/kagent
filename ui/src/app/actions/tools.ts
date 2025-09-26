@@ -11,10 +11,17 @@ export async function getTools(): Promise<ToolsResponse[]> {
   try {
     const response = await fetchApi<BaseResponse<ToolsResponse[]>>("/tools");
     if (!response) {
-      throw new Error("Failed to get built-in tools");
+      console.warn("No response received from tools API");
+      return [];
+    }
+    if (response.error) {
+      console.warn("Tools API returned error:", response.error);
+      return [];
     }
     return response.data || [];
   } catch (error) {
-    throw new Error(`Error getting built-in tools. ${error}`);
+    console.error("Error getting built-in tools:", error);
+    // Return empty array instead of throwing to prevent UI crashes
+    return [];
   }
 }

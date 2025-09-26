@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, Globe, Loader2, PlusCircle, Trash2, Code, InfoIcon, AlertCircle } from "lucide-react";
+import { Terminal, Globe, Loader2, PlusCircle, Trash2, Code, InfoIcon, AlertCircle, Clock } from "lucide-react";
 import type { RemoteMCPServer, MCPServer, ToolServerCreateRequest } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isResourceNameValid } from "@/lib/utils";
 import { NamespaceCombobox } from "@/components/NamespaceCombobox";
 import { Checkbox } from "./ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface AddServerDialogProps {
   open: boolean;
@@ -444,71 +445,104 @@ export function AddServerDialog({ open, onOpenChange, onAddServer, onError }: Ad
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
+      <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh] relative">
+        {/* Loading Overlay */}
+        {isSubmitting && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+            <div className="flex flex-col items-center space-y-4 p-8">
+              <div className="relative">
+                <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+                <div className="absolute inset-0 rounded-full border-2 border-blue-100"></div>
+              </div>
+              <div className="text-center space-y-2">
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-3 py-1">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Not Ready
+                </Badge>
+                <p className="text-sm text-gray-600 font-medium">Creating MCP Server...</p>
+                <p className="text-xs text-gray-500">This may take a few moments</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <DialogHeader className="px-6 pt-6 pb-2 border-b flex-shrink-0">
-          <DialogTitle>Add MCP Server</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Add MCP Server</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-start">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start shadow-sm">
+              <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-medium">Error</p>
-                <p>{formatErrorMessage(error)}</p>
+                <p className="font-semibold mb-1">Error</p>
+                <p className="leading-relaxed">{formatErrorMessage(error)}</p>
               </div>
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="server-name">Server Name</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="inline-flex">
-                        <InfoIcon className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs">Must be lowercase alphanumeric characters, &apos;-&apos; or &apos;.&apos;, and must start and end with an alphanumeric character</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Input 
-                id="server-name" 
-                placeholder="e.g., my-tool-server" 
-                value={serverName} 
-                onChange={handleServerNameChange}
-                className={!isResourceNameValid(serverName) && serverName ? "border-red-300" : ""}
-              />
-              {!isResourceNameValid(serverName) && serverName && (
-                <p className="text-xs text-red-500">Name must conform to RFC 1123 subdomain format</p>
-              )}
-            </div>
+          <div className="space-y-6">
+            {/* Server Configuration Section */}
+            <div className="space-y-4 p-4 bg-gray-50/50 rounded-lg border">
+              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                Server Configuration
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="server-name" className="text-sm font-medium">Server Name</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="inline-flex">
+                            <InfoIcon className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs text-xs">Must be lowercase alphanumeric characters, &apos;-&apos; or &apos;.&apos;, and must start and end with an alphanumeric character</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Input 
+                    id="server-name" 
+                    placeholder="e.g., my-tool-server" 
+                    value={serverName} 
+                    onChange={handleServerNameChange}
+                    className={`h-10 ${!isResourceNameValid(serverName) && serverName ? "border-red-300 focus:border-red-500" : ""}`}
+                  />
+                  {!isResourceNameValid(serverName) && serverName && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Name must conform to RFC 1123 subdomain format
+                    </p>
+                  )}
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="server-namespace">Server Namespace</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="inline-flex">
-                        <InfoIcon className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs">Must be lowercase alphanumeric characters, &apos;-&apos; or &apos;.&apos;, and must start and end with an alphanumeric character</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="server-namespace" className="text-sm font-medium">Server Namespace</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="inline-flex">
+                            <InfoIcon className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs text-xs">Must be lowercase alphanumeric characters, &apos;-&apos; or &apos;.&apos;, and must start and end with an alphanumeric character</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <NamespaceCombobox
+                    value={serverNamespace}
+                    onValueChange={setServerNamespace}
+                  />
+                </div>
               </div>
-              <NamespaceCombobox
-                value={serverNamespace}
-                onValueChange={setServerNamespace}
-              />
             </div>
 
             <Tabs defaultValue="command" value={activeTab} onValueChange={(v) => setActiveTab(v as "command" | "url")}>
@@ -523,126 +557,218 @@ export function AddServerDialog({ open, onOpenChange, onAddServer, onError }: Ad
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="command" className="pt-4 space-y-4">
+              <TabsContent value="command" className="pt-4 space-y-6">
                 {/* Command Preview Box */}
-                <div className="p-3 bg-gray-50 border rounded-md font-mono text-sm text-gray-500">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Code className="h-4 w-4" />
-                    <span>Command Preview:</span>
+                <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg font-mono text-sm shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1 bg-blue-100 rounded">
+                      <Code className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <span className="font-semibold text-gray-700">Command Preview</span>
                   </div>
                   <div className="overflow-x-auto">
-                    <div className="whitespace-pre-wrap break-all">{commandPreview || "<command will appear here>"}</div>
+                    <div className="whitespace-pre-wrap break-all bg-white p-3 rounded border text-gray-800">
+                      {commandPreview || "<command will appear here>"}
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label>Command Executor</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Command Executor</Label>
                     <Select value={commandType} onValueChange={setCommandType}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10">
                         <SelectValue placeholder="Select command" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="npx">npx</SelectItem>
-                        <SelectItem value="uvx">uvx</SelectItem>
+                        <SelectItem value="npx">npx (Node.js)</SelectItem>
+                        <SelectItem value="uvx">uvx (Python)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">Select the command executor (e.g., npx or uvx)</p>
+                    <p className="text-xs text-muted-foreground">Choose the package manager for your MCP server</p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between mb-1">
-                    <Label htmlFor="package-name">Package Name</Label>
+                    <Label htmlFor="command-prefix" className="text-sm font-medium">Command Prefix</Label>
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
                   </div>
-                  <Input id="package-name" placeholder="E.g. mcp-package" value={packageName} onChange={(e) => setPackageName(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">The name of the package to execute</p>
+                  <Input 
+                    id="command-prefix" 
+                    placeholder="e.g., --no-install-recommends" 
+                    value={commandPrefix} 
+                    onChange={(e) => setCommandPrefix(e.target.value)}
+                    className="h-10"
+                  />
+                  <p className="text-xs text-muted-foreground">Additional flags to pass to the command executor</p>
                 </div>
 
-                
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Arguments</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <Label htmlFor="package-name" className="text-sm font-medium">Package Name</Label>
                   </div>
-
-                  <div className="space-y-2">
-                    {argPairs.map((pair, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <Input placeholder="Argument (e.g., --verbose, --help, ...)" value={pair.value} onChange={(e) => updateArgPair(index, e.target.value)} className="flex-1" />
-                        <Button variant="ghost" size="sm" onClick={() => removeArgPair(index)} disabled={argPairs.length === 1} className="p-1">
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addArgPair} className="mt-2 w-full">
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add Argument
-                    </Button>
-                  </div>
+                  <Input 
+                    id="package-name" 
+                    placeholder="e.g., @modelcontextprotocol/server-filesystem" 
+                    value={packageName} 
+                    onChange={(e) => setPackageName(e.target.value)}
+                    className="h-10"
+                  />
+                  <p className="text-xs text-muted-foreground">The npm/PyPI package name for your MCP server</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Environment Variables</Label>
-                  </div>
+                {/* Advanced Configuration */}
+                <div className="space-y-4 p-4 bg-gray-50/30 rounded-lg border">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Advanced Configuration
+                  </h4>
 
-                  <div className="space-y-2">
-                    {envPairs.map((pair, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <Input placeholder="Key (e.g., NODE_ENV)" value={pair.key} onChange={(e) => updateEnvPair(index, "key", e.target.value)} className="flex-1" />
-                        <Input placeholder="Value (e.g., production)" value={pair.value} onChange={(e) => updateEnvPair(index, "value", e.target.value)} className="flex-1" />
-                        <Button variant="ghost" size="sm" onClick={() => removeEnvPair(index)} disabled={envPairs.length === 1} className="p-1">
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-sm font-medium">Arguments</Label>
+                        <Badge variant="outline" className="text-xs">Optional</Badge>
+                      </div>
+
+                      <div className="space-y-2">
+                        {argPairs.map((pair, index) => (
+                          <div key={index} className="flex gap-2 items-center">
+                            <Input 
+                              placeholder="Argument (e.g., --verbose, --help, ...)" 
+                              value={pair.value} 
+                              onChange={(e) => updateArgPair(index, e.target.value)} 
+                              className="flex-1 h-10" 
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => removeArgPair(index)} 
+                              disabled={argPairs.length === 1} 
+                              className="p-2 h-10 w-10"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={addArgPair} className="mt-2 w-full h-10">
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Add Argument
                         </Button>
                       </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addEnvPair} className="mt-2 w-full">
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add Environment Variable
-                    </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-sm font-medium">Environment Variables</Label>
+                        <Badge variant="outline" className="text-xs">Optional</Badge>
+                      </div>
+
+                      <div className="space-y-2">
+                        {envPairs.map((pair, index) => (
+                          <div key={index} className="flex gap-2 items-center">
+                            <Input 
+                              placeholder="Key (e.g., NODE_ENV)" 
+                              value={pair.key} 
+                              onChange={(e) => updateEnvPair(index, "key", e.target.value)} 
+                              className="flex-1 h-10" 
+                            />
+                            <Input 
+                              placeholder="Value (e.g., production)" 
+                              value={pair.value} 
+                              onChange={(e) => updateEnvPair(index, "value", e.target.value)} 
+                              className="flex-1 h-10" 
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => removeEnvPair(index)} 
+                              disabled={envPairs.length === 1} 
+                              className="p-2 h-10 w-10"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={addEnvPair} className="mt-2 w-full h-10">
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Add Environment Variable
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 
               </TabsContent>
 
-              <TabsContent value="url" className="pt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="url">Server URL</Label>
-                  <Input id="url" placeholder="e.g., https://example.com/mcp-endpoint" value={url} onChange={(e) => setUrl(e.target.value)} />
+              <TabsContent value="url" className="pt-4 space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="url" className="text-sm font-medium">Server URL</Label>
+                  <Input 
+                    id="url" 
+                    placeholder="e.g., https://example.com/mcp-endpoint" 
+                    value={url} 
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="h-10"
+                  />
                   <p className="text-xs text-muted-foreground">Enter the URL of the MCP server endpoint</p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="use-streamable-http" checked={useStreamableHttp} onCheckedChange={handleUseStreamableHttpChange} />
-                    <Label htmlFor="use-streamable-http">Use Streamable HTTP</Label>
+                    <Label htmlFor="use-streamable-http" className="text-sm font-medium">Use Streamable HTTP</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">Use Streamable HTTP to connect to the MCP server, instead of SSE</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="headers">Headers (JSON)</Label>
-                  <Input id="headers" placeholder='e.g., {"Authorization": "Bearer token"}' value={headers} onChange={(e) => setHeaders(e.target.value)} />
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="headers" className="text-sm font-medium">Headers (JSON)</Label>
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </div>
+                  <Input 
+                    id="headers" 
+                    placeholder='{"Authorization": "Bearer token"}' 
+                    value={headers} 
+                    onChange={(e) => setHeaders(e.target.value)}
+                    className="h-10"
+                  />
+                  <p className="text-xs text-muted-foreground">Additional headers to send with requests</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="timeout">Connection Timeout (e.g., 30s)</Label>
-                  <Input id="timeout" type="string" value={timeout} onChange={(e) => setTimeout(e.target.value)} />
+                <div className="space-y-3">
+                  <Label htmlFor="timeout" className="text-sm font-medium">Connection Timeout</Label>
+                  <Input 
+                    id="timeout" 
+                    placeholder="e.g., 30s" 
+                    value={timeout} 
+                    onChange={(e) => setTimeout(e.target.value)}
+                    className="h-10"
+                  />
+                  <p className="text-xs text-muted-foreground">Maximum time to wait for connection</p>
                 </div>
 
                 {!useStreamableHttp && (
-                  <div className="space-y-2">
-                    <Label htmlFor="sse-read-timeout">SSE Read Timeout (e.g., 60s)</Label>
-                    <Input id="sse-read-timeout" type="string" value={sseReadTimeout} onChange={(e) => setSseReadTimeout(e.target.value)} />
+                  <div className="space-y-3">
+                    <Label htmlFor="sse-read-timeout" className="text-sm font-medium">SSE Read Timeout</Label>
+                    <Input 
+                      id="sse-read-timeout" 
+                      placeholder="e.g., 300s" 
+                      value={sseReadTimeout} 
+                      onChange={(e) => setSseReadTimeout(e.target.value)}
+                      className="h-10"
+                    />
+                    <p className="text-xs text-muted-foreground">Maximum time to wait for SSE events</p>
                   </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="terminate-on-close" checked={terminateOnClose} onCheckedChange={(checked) => setTerminateOnClose(Boolean(checked))} />
-                    <Label htmlFor="terminate-on-close">Terminate Connection On Close</Label>
+                    <Label htmlFor="terminate-on-close" className="text-sm font-medium">Terminate Connection On Close</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">When enabled, the server will terminate connection when the client disconnects</p>
                 </div>
@@ -651,18 +777,27 @@ export function AddServerDialog({ open, onOpenChange, onAddServer, onError }: Ad
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0 bg-gray-50/50">
+          <Button 
+            variant="outline" 
+            onClick={handleClose} 
+            disabled={isSubmitting}
+            className="h-10"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-500 hover:bg-blue-600 text-white">
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || !serverName.trim() || (activeTab === 'command' && !packageName.trim()) || (activeTab === 'url' && !url.trim())}
+            className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-6"
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
+                Creating Server...
               </>
             ) : (
-              "Add Server"
+              "Add MCP Server"
             )}
           </Button>
         </DialogFooter>

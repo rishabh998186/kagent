@@ -98,13 +98,21 @@ export function ModelConfigStep({
                     throw new Error(result.error || 'Failed to fetch available models.');
                 }
             } catch (error) {
-                setProviderModelsError(error instanceof Error ? error.message : String(error));
+                console.error('Error fetching models:', error);
+                setProviderModelsError(error instanceof Error ? error.message : 'Failed to fetch models');
                 setProviderModelsData(null);
+                // Don't show toast here, let the UI handle the error display
             } finally {
                 setProviderModelsLoading(false);
             }
         };
-        fetchProviderModels();
+        
+        // Add a small delay to prevent hydration issues
+        const timeoutId = setTimeout(() => {
+            fetchProviderModels();
+        }, 100);
+        
+        return () => clearTimeout(timeoutId);
     }, []);
 
     useEffect(() => {
@@ -119,14 +127,21 @@ export function ModelConfigStep({
                     throw new Error(result.error || 'Failed to fetch supported providers.');
                 }
             } catch (error) {
-                console.error("Error fetching supported providers:", error);
-                setProvidersError(error instanceof Error ? error.message : String(error));
+                console.error('Error fetching supported providers:', error);
+                setProvidersError(error instanceof Error ? error.message : 'Failed to fetch supported providers');
                 setSupportedProviders([]);
+                // Don't show toast here, let the UI handle the error display
             } finally {
                 setProvidersLoading(false);
             }
         };
-        fetchProviders();
+        
+        // Add a small delay to prevent hydration issues
+        const timeoutId = setTimeout(() => {
+            fetchProviders();
+        }, 100);
+        
+        return () => clearTimeout(timeoutId);
     }, []);
 
     const formStep1Create = useForm<ModelConfigFormData>({
