@@ -308,47 +308,35 @@ export function AddServerDialog({
         // Create MCPServer for stdio-based server
         let image: string;
         let cmd: string;
-        let args: string[];
 
         if (commandType === "uvx") {
           // Use uvx with the official uv image
           image = "ghcr.io/astral-sh/uv:debian";
           cmd = "uvx";
-
-          // Build args array: [prefix..., packageName, args...]
-          args = [];
-          if (commandPrefix.trim()) {
-            // Split command prefix and add to args
-            args.push(...commandPrefix.trim().split(/\s+/));
-          }
-          // Add package name after prefix
-          args.push(packageName.trim());
-          // Add additional arguments after package name
-          argPairs
-            .filter((arg) => arg.value.trim() !== "")
-            .forEach((arg) => {
-              args.push(arg.value.trim());
-            });
         } else {
           // Use npx with Node.js image
           image = "node:24-alpine3.21";
           cmd = "npx";
+        }
 
-          // Build args array: [prefix..., packageName, args...]
-          args = [];
+        // Build args array: [prefix..., packageName, args...]
+        const buildArgs = (): string[] => {
+          const argsList: string[] = [];
           if (commandPrefix.trim()) {
             // Split command prefix and add to args
-            args.push(...commandPrefix.trim().split(/\s+/));
+            argsList.push(...commandPrefix.trim().split(/\s+/));
           }
           // Add package name after prefix
-          args.push(packageName.trim());
+          argsList.push(packageName.trim());
           // Add additional arguments after package name
           argPairs
             .filter((arg) => arg.value.trim() !== "")
             .forEach((arg) => {
-              args.push(arg.value.trim());
+              argsList.push(arg.value.trim());
             });
-        }
+          return argsList;
+        };
+        const args = buildArgs();
 
         const mcpServer: MCPServer = {
           metadata: {
@@ -608,6 +596,21 @@ export function AddServerDialog({
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <Label htmlFor="command-prefix">Command Prefix (Optional)</Label>
+                  </div>
+                  <Input
+                    id="command-prefix" 
+                    placeholder="E.g. --yes, --force, etc."
+                    value={commandPrefix}
+                    onChange={(e) => setCommandPrefix(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Additional flags/options to pass before the package name
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label>Command Executor</Label>
@@ -624,23 +627,6 @@ export function AddServerDialog({
                       Select the command executor (e.g., npx or uvx)
                     </p>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <Label htmlFor="command-prefix">
-                      Command Prefix (Optional)
-                    </Label>
-                  </div>
-                  <Input
-                    id="command-prefix"
-                    placeholder="E.g. --yes, --force, etc."
-                    value={commandPrefix}
-                    onChange={(e) => setCommandPrefix(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Additional flags/options to pass before the package name
-                  </p>
                 </div>
 
                 <div className="space-y-2">
