@@ -12,6 +12,7 @@ import {
 } from "./ui/popover";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useAgents } from "./AgentsProvider";
+import { ClientOnly } from "./ClientOnly";
 
 const REFRESH_INTERVALS = [
   { label: "10 seconds", value: 10000 },
@@ -21,7 +22,7 @@ const REFRESH_INTERVALS = [
   { label: "10 minutes", value: 600000 },
 ];
 
-export function SettingsPanel() {
+function SettingsPanelComponent() {
   const { 
     autoRefreshEnabled, 
     autoRefreshInterval, 
@@ -111,5 +112,13 @@ export function SettingsPanel() {
         </PopoverContent>
       </Popover>
     </div>
+  );
+}
+
+export function SettingsPanel() {
+  return (
+    <ClientOnly>
+      <SettingsPanelComponent />
+    </ClientOnly>
   );
 }
