@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 
 interface UsePollingOptions {
   interval?: number; // Polling interval in milliseconds
@@ -26,6 +26,12 @@ export function usePolling(
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const callbackRef = useRef(callback);
   const isPollingRef = useRef(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Set mounted state after hydration
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Keep callback reference updated
   useEffect(() => {
@@ -33,13 +39,13 @@ export function usePolling(
   }, [callback]);
 
   const startPolling = useCallback(() => {
-    if (isPollingRef.current || !enabled) return;
+    if (isPollingRef.current || !enabled || !isMounted) return;
     
     isPollingRef.current = true;
     
     const poll = async () => {
       // Check if page is visible (if onlyWhenVisible is enabled)
-      if (onlyWhenVisible && document.hidden) {
+      if (onlyWhenVisible && typeof window !== 'undefined' && document.hidden) {
         return;
       }
       
@@ -57,7 +63,7 @@ export function usePolling(
 
     // Set up interval
     intervalRef.current = setInterval(poll, interval);
-  }, [interval, immediate, enabled, onlyWhenVisible]);
+  }, [interval, immediate, enabled, onlyWhenVisible, isMounted]);
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -69,7 +75,7 @@ export function usePolling(
 
   // Handle visibility change
   useEffect(() => {
-    if (!onlyWhenVisible) return;
+    if (!onlyWhenVisible || typeof window === 'undefined') return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {

@@ -30,10 +30,16 @@ const DEFAULT_AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
 export function SettingsProvider({ children }: SettingsProviderProps) {
   const [autoRefreshEnabled, setAutoRefreshEnabledState] = useState(DEFAULT_AUTO_REFRESH_ENABLED);
   const [autoRefreshInterval, setAutoRefreshIntervalState] = useState(DEFAULT_AUTO_REFRESH_INTERVAL);
+  const [isClient, setIsClient] = useState(false);
 
-  // Load settings from localStorage on mount
+  // Set isClient to true after hydration to avoid SSR mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setIsClient(true);
+  }, []);
+
+  // Load settings from localStorage on mount (only on client)
+  useEffect(() => {
+    if (isClient) {
       const savedAutoRefreshEnabled = localStorage.getItem('kagent.autoRefreshEnabled');
       const savedAutoRefreshInterval = localStorage.getItem('kagent.autoRefreshInterval');
 
@@ -45,24 +51,24 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         setAutoRefreshIntervalState(parseInt(savedAutoRefreshInterval, 10));
       }
     }
-  }, []);
+  }, [isClient]);
 
   const setAutoRefreshEnabled = (enabled: boolean) => {
     setAutoRefreshEnabledState(enabled);
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       localStorage.setItem('kagent.autoRefreshEnabled', JSON.stringify(enabled));
     }
   };
 
   const setAutoRefreshInterval = (interval: number) => {
     setAutoRefreshIntervalState(interval);
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       localStorage.setItem('kagent.autoRefreshInterval', interval.toString());
     }
   };
 
   const value = {
-    autoRefreshEnabled,
+    autoRefreshEnabled: isClient ? autoRefreshEnabled : false, // Disable auto-refresh until client-side
     autoRefreshInterval,
     setAutoRefreshEnabled,
     setAutoRefreshInterval,
