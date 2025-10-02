@@ -6,6 +6,8 @@ import { getTools } from "@/app/actions/tools";
 import type { Agent, Tool, AgentResponse, BaseResponse, ModelConfig, ToolsResponse, AgentType, EnvVar } from "@/types";
 import { getModelConfigs } from "@/app/actions/modelConfigs";
 import { isResourceNameValid } from "@/lib/utils";
+import { usePolling } from "@/hooks/usePolling";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface ValidationErrors {
   name?: string;
@@ -53,6 +55,8 @@ interface AgentsContextType {
   updateAgent: (agentData: AgentFormData) => Promise<BaseResponse<Agent>>;
   getAgent: (name: string, namespace: string) => Promise<AgentResponse | null>;
   validateAgentData: (data: Partial<AgentFormData>) => ValidationErrors;
+  isRefreshing: boolean;
+  lastRefresh: Date | null;
 }
 
 const AgentsContext = createContext<AgentsContextType | undefined>(undefined);
@@ -70,15 +74,23 @@ interface AgentsProviderProps {
 }
 
 export function AgentsProvider({ children }: AgentsProviderProps) {
+  const { autoRefreshEnabled, autoRefreshInterval } = useSettings();
   const [agents, setAgents] = useState<AgentResponse[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [tools, setTools] = useState<ToolsResponse[]>([]);
   const [models, setModels] = useState<ModelConfig[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
-  const fetchAgents = useCallback(async () => {
+  const fetchAgents = useCallback(async (isBackgroundRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isBackgroundRefresh) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      
       const agentsResult = await getAgents();
 
       if (!agentsResult.data || agentsResult.error) {
@@ -87,10 +99,15 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
 
       setAgents(agentsResult.data);
       setError("");
+      setLastRefresh(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
-      setLoading(false);
+      if (!isBackgroundRefresh) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
@@ -203,7 +220,7 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
 
       if (!result.error) {
         // Refresh agents to get the newly created one
-        await fetchAgents();
+        await fetchAgents(false); // Force a full refresh for immediate feedback
       }
 
       return result;
@@ -231,7 +248,7 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
 
       if (!result.error) {
         // Refresh agents to get the updated one
-        await fetchAgents();
+        await fetchAgents(false); // Force a full refresh for immediate feedback
       }
 
       return result;
@@ -243,6 +260,19 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
       };
     }
   }, [fetchAgents, validateAgentData]);
+
+  // Auto-refresh background polling
+  const refreshAllData = useCallback(async () => {
+    // Only do background refresh for agents (main data)
+    // Tools and models change less frequently
+    await fetchAgents(true);
+  }, [fetchAgents]);
+
+  usePolling(refreshAllData, {
+    interval: autoRefreshInterval,
+    enabled: autoRefreshEnabled,
+    onlyWhenVisible: true,
+  });
 
   // Initial fetches
   useEffect(() => {
@@ -257,11 +287,13 @@ export function AgentsProvider({ children }: AgentsProviderProps) {
     loading,
     error,
     tools,
-    refreshAgents: fetchAgents,
+    refreshAgents: () => fetchAgents(false),
     createNewAgent,
     updateAgent,
     getAgent,
     validateAgentData,
+    isRefreshing,
+    lastRefresh,
   };
 
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;

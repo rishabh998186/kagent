@@ -7,6 +7,8 @@ import { ErrorState } from "./ErrorState";
 import { Button } from "./ui/button";
 import { LoadingState } from "./LoadingState";
 import { useAgents } from "./AgentsProvider";
+import { RefreshIndicator } from "./RefreshIndicator";
+import { SettingsPanel } from "./SettingsPanel";
 
 export default function AgentList() {
   const { agents , loading, error } = useAgents();
@@ -24,7 +26,9 @@ export default function AgentList() {
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Agents</h1>
+          <RefreshIndicator />
         </div>
+        <SettingsPanel />
       </div>
 
       {agents?.length === 0 ? (
