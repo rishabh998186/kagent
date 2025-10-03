@@ -4,9 +4,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface SettingsContextType {
   autoRefreshEnabled: boolean;
-  autoRefreshInterval: number;
+  autoRefreshInterval: number; // in milliseconds
   setAutoRefreshEnabled: (enabled: boolean) => void;
   setAutoRefreshInterval: (interval: number) => void;
+  // SWR configuration helpers
+  getSwrConfig: () => {
+    refreshInterval?: number;
+    revalidateOnFocus: boolean;
+    revalidateOnReconnect: boolean;
+  };
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -67,11 +73,18 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }
   };
 
+  const getSwrConfig = () => ({
+    refreshInterval: (isClient && autoRefreshEnabled) ? autoRefreshInterval : undefined,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+
   const value = {
     autoRefreshEnabled: isClient ? autoRefreshEnabled : false, // Disable auto-refresh until client-side
     autoRefreshInterval,
     setAutoRefreshEnabled,
     setAutoRefreshInterval,
+    getSwrConfig,
   };
 
   return (

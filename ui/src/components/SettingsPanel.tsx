@@ -32,6 +32,7 @@ function SettingsPanelComponent() {
   const { refreshAgents } = useAgents();
 
   const handleManualRefresh = () => {
+    // This will trigger SWR to refetch all agent data
     refreshAgents();
   };
 
