@@ -15,11 +15,11 @@ import { useAgents } from "./AgentsProvider";
 import { ClientOnly } from "./ClientOnly";
 
 const REFRESH_INTERVALS = [
+  { label: "5 seconds", value: 5000 },
   { label: "10 seconds", value: 10000 },
   { label: "30 seconds", value: 30000 },
   { label: "1 minute", value: 60000 },
   { label: "5 minutes", value: 300000 },
-  { label: "10 minutes", value: 600000 },
 ];
 
 function SettingsPanelComponent() {

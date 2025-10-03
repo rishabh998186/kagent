@@ -27,24 +27,13 @@ export const fetcher = async (url: string): Promise<unknown> => {
   return jsonData;
 };
 
-/**
- * Get the base API URL from environment or default to localhost
- */
-export const getApiUrl = (): string => {
-  if (typeof window === 'undefined') {
-    // Server-side: use internal service
-    return process.env.NEXT_PUBLIC_API_URL || 'http://kagent-controller-service:8083/api';
-  }
-  
-  // Client-side: use localhost for port-forwarded access
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8083/api';
-};
+import { getBackendUrl } from '@/lib/utils';
 
 /**
- * Build full API URL for a given endpoint
+ * Build full API URL for a given endpoint using existing backend URL utility
  */
 export const buildApiUrl = (endpoint: string): string => {
-  const baseUrl = getApiUrl();
+  const baseUrl = getBackendUrl();
   return `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 };
 
