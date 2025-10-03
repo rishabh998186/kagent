@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <TooltipProvider>
       <SettingsProvider>
         <AgentsProvider>
-          <html lang="en" className="">
+          <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.className} flex flex-col h-screen overflow-hidden`}>
               <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                 <AppInitializer>
