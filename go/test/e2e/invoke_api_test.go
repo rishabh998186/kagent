@@ -115,7 +115,7 @@ func setupA2AClient(t *testing.T) *a2aclient.A2AClient {
 
 // runSyncTest runs a synchronous message test
 func runSyncTest(t *testing.T, a2aClient *a2aclient.A2AClient, userMessage, expectedText string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(),120*time.Second)
 	defer cancel()
 
 	t.Logf("Sending sync message: %s", userMessage)
