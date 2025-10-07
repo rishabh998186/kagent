@@ -10,35 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Terminal,
-  Globe,
-  Loader2,
-  PlusCircle,
-  Trash2,
-  Code,
-  InfoIcon,
-  AlertCircle,
-} from "lucide-react";
-import type {
-  RemoteMCPServer,
-  MCPServer,
-  ToolServerCreateRequest,
-} from "@/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { isResourceNameValid } from "@/lib/utils";
+import { Terminal, Globe, Loader2, PlusCircle, Trash2, Code, InfoIcon, AlertCircle } from "lucide-react";
+import type { RemoteMCPServer, MCPServer, ToolServerCreateRequest } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { createRFC1123ValidName, isResourceNameValid } from "@/lib/utils";
 import { NamespaceCombobox } from "@/components/NamespaceCombobox";
 import { Checkbox } from "./ui/checkbox";
 
@@ -147,7 +123,7 @@ export function AddServerDialog({
     let generatedName = "";
 
     if (activeTab === "command" && packageName.trim()) {
-      generatedName = cleanPackageName(packageName.trim());
+      generatedName = createRFC1123ValidName([packageName.trim()]);
     } else if (activeTab === "url" && url.trim()) {
       try {
         const urlObj = new URL(url.trim());

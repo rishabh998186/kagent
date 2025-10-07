@@ -8,7 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kagent-dev/kagent/go/cli/internal/cli"
+	cli "github.com/kagent-dev/kagent/go/cli/internal/cli/agent"
+	"github.com/kagent-dev/kagent/go/cli/internal/cli/mcp"
 	"github.com/kagent-dev/kagent/go/cli/internal/config"
 	"github.com/kagent-dev/kagent/go/cli/internal/profiles"
 	"github.com/kagent-dev/kagent/go/cli/internal/tui"
@@ -37,9 +38,7 @@ func main() {
 		Use:   "kagent",
 		Short: "kagent is a CLI and TUI for kagent",
 		Long:  "kagent is a CLI and TUI for kagent",
-		Run: func(cmd *cobra.Command, args []string) {
-			runInteractive()
-		},
+		Run: runInteractive,
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfg.KAgentURL, "kagent-url", "http://localhost:8083", "KAgent URL")
@@ -100,8 +99,8 @@ func main() {
 		Short: "Generate a bug report",
 		Long:  `Generate a bug report`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := cli.CheckServerConnection(cfg.Client()); err != nil {
-				pf, err := cli.NewPortForward(ctx, cfg)
+			if err := cli.CheckServerConnection(cmd.Context(), cfg.Client()); err != nil {
+				pf, err := cli.NewPortForward(cmd.Context(), cfg)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error starting port-forward: %v\n", err)
 					return
@@ -117,15 +116,15 @@ func main() {
 		Short: "Print the kagent version",
 		Long:  `Print the kagent version`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := cli.CheckServerConnection(cfg.Client()); err != nil {
-				pf, err := cli.NewPortForward(ctx, cfg)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error starting port-forward: %v\n", err)
-					return
-				}
+			// print out kagent CLI version regardless if a port-forward to kagent server succeeds
+			// versions unable to obtain from the remote kagent will be reported as "unknown"
+			defer cli.VersionCmd(cfg)
+
+			if err := cli.CheckServerConnection(cmd.Context(), cfg.Client()); err != nil {
+				// silently error if kagent server is not reachable
+				pf, _ := cli.NewPortForward(cmd.Context(), cfg)
 				defer pf.Stop()
 			}
-			cli.VersionCmd(cfg)
 		},
 	}
 
@@ -134,7 +133,7 @@ func main() {
 		Short: "Open the kagent dashboard",
 		Long:  `Open the kagent dashboard`,
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.DashboardCmd(ctx, cfg)
+			cli.DashboardCmd(cmd.Context(), cfg)
 		},
 	}
 
@@ -154,8 +153,8 @@ func main() {
 		Short: "Get a session or list all sessions",
 		Long:  `Get a session by ID or list all sessions`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := cli.CheckServerConnection(cfg.Client()); err != nil {
-				pf, err := cli.NewPortForward(ctx, cfg)
+			if err := cli.CheckServerConnection(cmd.Context(), cfg.Client()); err != nil {
+				pf, err := cli.NewPortForward(cmd.Context(), cfg)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error starting port-forward: %v\n", err)
 					return
@@ -175,8 +174,8 @@ func main() {
 		Short: "Get an agent or list all agents",
 		Long:  `Get an agent by name or list all agents`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := cli.CheckServerConnection(cfg.Client()); err != nil {
-				pf, err := cli.NewPortForward(ctx, cfg)
+			if err := cli.CheckServerConnection(cmd.Context(), cfg.Client()); err != nil {
+				pf, err := cli.NewPortForward(cmd.Context(), cfg)
 				if err != nil {
 					return
 				}
@@ -195,8 +194,8 @@ func main() {
 		Short: "Get tools",
 		Long:  `List all available tools`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := cli.CheckServerConnection(cfg.Client()); err != nil {
-				pf, err := cli.NewPortForward(ctx, cfg)
+			if err := cli.CheckServerConnection(cmd.Context(), cfg.Client()); err != nil {
+				pf, err := cli.NewPortForward(cmd.Context(), cfg)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error starting port-forward: %v\n", err)
 					return
@@ -312,7 +311,7 @@ Examples:
 		Run: func(cmd *cobra.Command, args []string) {
 			deployCfg.ProjectDir = args[0]
 
-			if err := cli.DeployCmd(ctx, deployCfg); err != nil {
+			if err := cli.DeployCmd(cmd.Context(), deployCfg); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
@@ -326,7 +325,7 @@ Examples:
 	deployCmd.Flags().StringVar(&deployCfg.APIKeySecret, "api-key-secret", "", "Name of existing secret containing API key")
 	deployCmd.Flags().StringVar(&deployCfg.Config.Namespace, "namespace", "", "Kubernetes namespace to deploy to")
 
-	rootCmd.AddCommand(installCmd, uninstallCmd, invokeCmd, bugReportCmd, versionCmd, dashboardCmd, getCmd, initCmd, buildCmd, deployCmd)
+	rootCmd.AddCommand(installCmd, uninstallCmd, invokeCmd, bugReportCmd, versionCmd, dashboardCmd, getCmd, initCmd, buildCmd, deployCmd, mcp.NewMCPCmd())
 
 	// Initialize config
 	if err := config.Init(); err != nil {
@@ -342,7 +341,7 @@ Examples:
 
 }
 
-func runInteractive() {
+func runInteractive(cmd *cobra.Command, args []string) {
 	cfg, err := config.Get()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting config: %v\n", err)
@@ -350,13 +349,11 @@ func runInteractive() {
 	}
 
 	client := cfg.Client()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Start port forward and ensure it is healthy.
 	var pf *cli.PortForward
-	if err := cli.CheckServerConnection(client); err != nil {
-		pf, err = cli.NewPortForward(ctx, cfg)
+	if err := cli.CheckServerConnection(cmd.Context(), client); err != nil {
+		pf, err = cli.NewPortForward(cmd.Context(), cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error starting port-forward: %v\n", err)
 			return
