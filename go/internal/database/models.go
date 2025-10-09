@@ -179,6 +179,40 @@ type LangGraphCheckpointWrite struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
+// OptimizationJob represents a DSPy optimization job
+type OptimizationJob struct {
+	ID        string         `gorm:"primaryKey;not null" json:"id"`
+	AgentID   string         `gorm:"index;not null" json:"agent_id"`
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+
+	Status      string     `gorm:"not null;index" json:"status"` // 'pending', 'running', 'completed', 'failed'
+	Optimizer   string     `gorm:"not null" json:"optimizer"`    // 'MIPRO', 'MIPROv2', 'BootstrapFewShot', etc.
+	Config      string     `gorm:"type:json" json:"config"`      // JSON serialized optimizer config
+	StartedAt   *time.Time `json:"started_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Metrics     string     `gorm:"type:json" json:"metrics"` // JSON serialized metrics (accuracy, etc.)
+	ErrorMsg    *string    `gorm:"type:text" json:"error_msg,omitempty"`
+}
+
+// PromptArtifact represents a compiled or optimized prompt artifact
+type PromptArtifact struct {
+	ID        string         `gorm:"primaryKey;not null" json:"id"`
+	AgentID   string         `gorm:"index;not null" json:"agent_id"`
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+
+	Version            int     `gorm:"not null" json:"version"`
+	CompiledPrompt     string  `gorm:"type:text;not null" json:"compiled_prompt"`
+	DSPyConfig         string  `gorm:"type:json" json:"dspy_config"` // JSON serialized DSPy config
+	TrainingDataRef    *string `json:"training_data_ref,omitempty"`
+	OptimizationJobID  *string `gorm:"index" json:"optimization_job_id,omitempty"`
+	IsActive           bool    `gorm:"default:false;index" json:"is_active"`
+	PerformanceMetrics string  `gorm:"type:json" json:"performance_metrics,omitempty"` // JSON serialized metrics
+}
+
 // TableName methods to match Python table names
 func (Agent) TableName() string                    { return "agent" }
 func (Event) TableName() string                    { return "event" }
@@ -190,3 +224,5 @@ func (Tool) TableName() string                     { return "tool" }
 func (ToolServer) TableName() string               { return "toolserver" }
 func (LangGraphCheckpoint) TableName() string      { return "lg_checkpoint" }
 func (LangGraphCheckpointWrite) TableName() string { return "lg_checkpoint_write" }
+func (OptimizationJob) TableName() string          { return "optimization_job" }
+func (PromptArtifact) TableName() string           { return "prompt_artifact" }

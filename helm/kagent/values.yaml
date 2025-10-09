@@ -350,3 +350,9 @@ otel:
         endpoint: http://host.docker.internal:4317
         timeout: 15
         insecure: true
+
+# DSPy Service Configuration
+dspy:
+  image: your-registry/dspy-service
+  tag: latest
+  llmProvider: openai

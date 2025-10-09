@@ -724,3 +724,8 @@ func (c *InMemoryFakeClient) ListWrites(userID, threadID, checkpointNS, checkpoi
 
 	return writes[start:end], nil
 }
+
+// DB returns nil as fake client doesn't use GORM
+func (c *InMemoryFakeClient) DB() *gorm.DB {
+	return nil
+}

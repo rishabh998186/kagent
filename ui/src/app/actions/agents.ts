@@ -86,6 +86,7 @@ function fromAgentFormDataToAgent(agentFormData: AgentFormData): Agent {
       modelConfig: modelConfigName || "",
       stream: agentFormData.stream ?? true,
       tools: convertTools(agentFormData.tools || []),
+      dspyConfig: agentFormData.dspyConfig,
     };
   } else if (type === "BYO") {
     base.spec!.byo = {

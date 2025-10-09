@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dspy-service
+  labels:
+    app: dspy-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dspy-service
+  template:
+    metadata:
+      labels:
+        app: dspy-service
+    spec:
+      containers:
+      - name: dspy-service
+        image: "{{ .Values.dspy.image }}:{{ .Values.dspy.tag }}"
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DSPY_LM_PROVIDER
+          value: "{{ .Values.dspy.llmProvider }}"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dspy-secrets
+              key: openai-api-key
+              optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dspy-service
+spec:
+  selector:
+    app: dspy-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http

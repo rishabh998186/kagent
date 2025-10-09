@@ -56,6 +56,7 @@ type AgentSpec struct {
 }
 
 // +kubebuilder:validation:XValidation:rule="!has(self.systemMessage) || !has(self.systemMessageFrom)",message="systemMessage and systemMessageFrom are mutually exclusive"
+// +kubebuilder:validation:XValidation:rule="!has(self.dspyConfig) || (!has(self.systemMessage) && !has(self.systemMessageFrom))",message="dspyConfig cannot be used with systemMessage or systemMessageFrom"
 type DeclarativeAgentSpec struct {
 	// SystemMessage is a string specifying the system message for the agent
 	// +optional
@@ -63,6 +64,12 @@ type DeclarativeAgentSpec struct {
 	// SystemMessageFrom is a reference to a ConfigMap or Secret containing the system message.
 	// +optional
 	SystemMessageFrom *ValueSource `json:"systemMessageFrom,omitempty"`
+	// DSPyConfig enables DSPy-based prompt compilation and optimization
+	// When specified, the agent will use DSPy framework to compile and optimize prompts
+	// instead of using systemMessage or systemMessageFrom directly.
+	// +optional
+	DSPyConfig *DSPyConfig `json:"dspyConfig,omitempty"`
+
 	// The name of the model config to use.
 	// If not specified, the default value is "default-model-config".
 	// Must be in the same namespace as the Agent.
@@ -249,6 +256,119 @@ type AgentList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Agent `json:"items"`
 }
+
+// DSPyConfig defines the configuration for DSPy-based prompt compilation
+type DSPyConfig struct {
+	// Enabled indicates whether DSPy compilation is active for this agent
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled"`
+
+	// Signature defines the input/output schema for the DSPy module
+	Signature DSPySignature `json:"signature"`
+
+	// Module specifies which DSPy module to use
+	// +kubebuilder:validation:Enum=Predict;ChainOfThought;ReAct
+	// +kubebuilder:default=ChainOfThought
+	Module string `json:"module"`
+
+	// CompiledPromptRef is a reference to a ConfigMap or Secret containing
+	// the compiled prompt artifact. This is populated after successful compilation.
+	// +optional
+	CompiledPromptRef *ValueSource `json:"compiledPromptRef,omitempty"`
+
+	// OptimizationConfig defines settings for prompt optimization
+	// +optional
+	OptimizationConfig *OptimizationConfig `json:"optimizationConfig,omitempty"`
+}
+
+// DSPySignature defines the input and output schema for a DSPy module
+type DSPySignature struct {
+	// Instructions provide context for what the module should do
+	// +optional
+	Instructions string `json:"instructions,omitempty"`
+
+	// Inputs define the input fields for the signature
+	// +kubebuilder:validation:MinItems=1
+	Inputs []SignatureField `json:"inputs"`
+
+	// Outputs define the output fields for the signature
+	// +kubebuilder:validation:MinItems=1
+	Outputs []SignatureField `json:"outputs"`
+}
+
+// SignatureField represents a single input or output field in a DSPy signature
+type SignatureField struct {
+	// Name of the field
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Type of the field
+	// +kubebuilder:validation:Enum=string;int;bool;list;float
+	// +kubebuilder:default=string
+	Type string `json:"type"`
+
+	// Description provides context about what this field represents
+	// +optional
+	Description string `json:"description,omitempty"`
+
+	// Prefix is an optional prefix for the field in the generated prompt
+	// +optional
+	Prefix string `json:"prefix,omitempty"`
+}
+
+// OptimizationConfig defines configuration for DSPy prompt optimization
+type OptimizationConfig struct {
+	// Enabled indicates whether optimization should be performed
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+
+	// Optimizer specifies which DSPy optimizer algorithm to use
+	// +kubebuilder:validation:Enum=MIPRO;MIPROv2;BootstrapFewShot;BootstrapFewShotWithRandomSearch;COPRO
+	// +kubebuilder:default=MIPROv2
+	Optimizer string `json:"optimizer"`
+
+	// TrainingDataRef references a ConfigMap or Secret containing training examples
+	// The data should be in JSON format with an array of input/output examples
+	// +optional
+	TrainingDataRef *ValueSource `json:"trainingDataRef,omitempty"`
+
+	// MetricName specifies the evaluation metric to optimize for
+	// +optional
+	MetricName string `json:"metricName,omitempty"`
+
+	// MaxBootstrappedDemos limits the number of demonstrations to bootstrap
+	// Only applicable for bootstrap-based optimizers
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=20
+	MaxBootstrappedDemos *int `json:"maxBootstrappedDemos,omitempty"`
+
+	// MaxLabeledDemos limits the number of labeled demonstrations to use
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=50
+	MaxLabeledDemos *int `json:"maxLabeledDemos,omitempty"`
+}
+
+// DSPyModuleType represents the supported DSPy module types
+type DSPyModuleType string
+
+const (
+	DSPyModuleType_Predict        DSPyModuleType = "Predict"
+	DSPyModuleType_ChainOfThought DSPyModuleType = "ChainOfThought"
+	DSPyModuleType_ReAct          DSPyModuleType = "ReAct"
+)
+
+// DSPyOptimizerType represents the supported DSPy optimizer algorithms
+type DSPyOptimizerType string
+
+const (
+	DSPyOptimizerType_MIPRO                            DSPyOptimizerType = "MIPRO"
+	DSPyOptimizerType_MIPROv2                          DSPyOptimizerType = "MIPROv2"
+	DSPyOptimizerType_BootstrapFewShot                 DSPyOptimizerType = "BootstrapFewShot"
+	DSPyOptimizerType_BootstrapFewShotWithRandomSearch DSPyOptimizerType = "BootstrapFewShotWithRandomSearch"
+	DSPyOptimizerType_COPRO                            DSPyOptimizerType = "COPRO"
+)
 
 func init() {
 	SchemeBuilder.Register(&Agent{}, &AgentList{})

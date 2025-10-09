@@ -102,6 +102,8 @@ func (m *Manager) Initialize() error {
 		&ToolServer{},
 		&LangGraphCheckpoint{},
 		&LangGraphCheckpointWrite{},
+		&OptimizationJob{},
+		&PromptArtifact{},
 	)
 
 	if err != nil {
@@ -130,6 +132,8 @@ func (m *Manager) Reset(recreateTables bool) error {
 		&ToolServer{},
 		&LangGraphCheckpoint{},
 		&LangGraphCheckpointWrite{},
+		&OptimizationJob{},
+		&PromptArtifact{},
 	)
 
 	if err != nil {
@@ -154,4 +158,9 @@ func (m *Manager) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+// DB returns the underlying GORM database instance
+func (m *Manager) DB() *gorm.DB {
+	return m.db
 }

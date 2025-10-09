@@ -57,6 +57,9 @@ type Client interface {
 	StoreCheckpointWrites(writes []*LangGraphCheckpointWrite) error
 	ListCheckpoints(userID, threadID, checkpointNS string, checkpointID *string, limit int) ([]*LangGraphCheckpointTuple, error)
 	DeleteCheckpoint(userID, threadID string) error
+
+	// DB returns the underlying GORM database instance
+	DB() *gorm.DB
 }
 
 type LangGraphCheckpointTuple struct {
@@ -577,4 +580,9 @@ func (c *clientImpl) DeleteCheckpoint(userID, threadID string) error {
 		return nil
 	})
 
+}
+
+// DB returns the underlying GORM database instance
+func (c *clientImpl) DB() *gorm.DB {
+	return c.db
 }

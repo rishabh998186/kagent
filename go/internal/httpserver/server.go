@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kagent-dev/kagent/go/internal/a2a"
 	"github.com/kagent-dev/kagent/go/internal/database"
+	"github.com/kagent-dev/kagent/go/internal/dspy"
 	"github.com/kagent-dev/kagent/go/internal/httpserver/handlers"
 	common "github.com/kagent-dev/kagent/go/internal/utils"
 	"github.com/kagent-dev/kagent/go/internal/version"
@@ -36,6 +37,7 @@ const (
 	APIPathA2A         = "/api/a2a"
 	APIPathFeedback    = "/api/feedback"
 	APIPathLangGraph   = "/api/langgraph"
+	APIPathDSPy        = "/api/dspy"
 )
 
 var defaultModelConfig = types.NamespacedName{
@@ -53,6 +55,8 @@ type ServerConfig struct {
 	DbClient          database.Client
 	Authenticator     auth.AuthProvider
 	Authorizer        auth.Authorizer
+	DSPyServiceURL    string // URL for Python DSPy service
+
 }
 
 // HTTPServer is the structure that manages the HTTP server
@@ -67,12 +71,18 @@ type HTTPServer struct {
 
 // NewHTTPServer creates a new HTTP server instance
 func NewHTTPServer(config ServerConfig) (*HTTPServer, error) {
-	// Initialize database
+	// Initialize handlers
+	dbHandlers := handlers.NewHandlers(config.KubeClient, defaultModelConfig, config.DbClient, config.WatchedNamespaces, config.Authorizer)
+
+	// Initialize DSPy compiler
+	dspyCompiler := dspy.NewCompiler(config.DSPyServiceURL)
+	dspyOptimizer := dspy.NewOptimizer(config.DbClient.DB(), dspyCompiler)
+	dbHandlers.DSPy = handlers.NewDSPyHandler(dbHandlers.Agents.Base, dspyCompiler, dspyOptimizer)
 
 	return &HTTPServer{
 		config:        config,
 		router:        config.Router,
-		handlers:      handlers.NewHandlers(config.KubeClient, defaultModelConfig, config.DbClient, config.WatchedNamespaces, config.Authorizer),
+		handlers:      dbHandlers,
 		authenticator: config.Authenticator,
 	}, nil
 }
@@ -181,6 +191,12 @@ func (s *HTTPServer) setupRoutes() {
 	s.router.HandleFunc(APIPathAgents, adaptHandler(s.handlers.Agents.HandleUpdateAgent)).Methods(http.MethodPut)
 	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}", adaptHandler(s.handlers.Agents.HandleGetAgent)).Methods(http.MethodGet)
 	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}", adaptHandler(s.handlers.Agents.HandleDeleteAgent)).Methods(http.MethodDelete)
+
+	// DSPy Routes
+	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}/dspy/compile", adaptHandler(s.handlers.DSPy.HandleCompilePrompt)).Methods(http.MethodPost)
+	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}/dspy/optimize", adaptHandler(s.handlers.DSPy.HandleStartOptimization)).Methods(http.MethodPost)
+	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}/dspy/optimize/{jobId}", adaptHandler(s.handlers.DSPy.HandleGetOptimizationJob)).Methods(http.MethodGet)
+	s.router.HandleFunc(APIPathAgents+"/{namespace}/{name}/dspy/optimize", adaptHandler(s.handlers.DSPy.HandleListOptimizationJobs)).Methods(http.MethodGet)
 
 	// Providers
 	s.router.HandleFunc(APIPathProviders+"/models", adaptHandler(s.handlers.Provider.HandleListSupportedModelProviders)).Methods(http.MethodGet)

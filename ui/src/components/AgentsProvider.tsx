@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { getAgent as getAgentAction, createAgent, getAgents } from "@/app/actions/agents";
 import { getTools } from "@/app/actions/tools";
-import type { Agent, Tool, AgentResponse, BaseResponse, ModelConfig, ToolsResponse, AgentType, EnvVar } from "@/types";
+import type { Agent, Tool, AgentResponse, BaseResponse, ModelConfig, ToolsResponse, AgentType, EnvVar, DSPyConfig } from "@/types";
 import { getModelConfigs } from "@/app/actions/modelConfigs";
 import { isResourceNameValid } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ interface ValidationErrors {
   description?: string;
   type?: string;
   systemPrompt?: string;
+  dspyConfig?: DSPyConfig;
   model?: string;
   knowledgeSources?: string;
   tools?: string;
@@ -25,6 +26,7 @@ export interface AgentFormData {
   type?: AgentType;
   // Declarative fields
   systemPrompt?: string;
+  dspyConfig?: DSPyConfig;
   modelName?: string;
   tools: Tool[];
   stream?: boolean;

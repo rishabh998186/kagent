@@ -227,6 +227,7 @@ export interface DeclarativeAgentSpec {
   // Name of the model config resource
   modelConfig: string;
   stream?: boolean;
+  dspyConfig?: DSPyConfig;
   a2aConfig?: A2AConfig;
 }
 
@@ -385,4 +386,35 @@ export interface ToolServerCreateRequest {
 export interface DiscoveredTool {
   name: string;
   description: string;
+}
+
+// DSPy Configuration Types
+export interface DSPyField {
+  name: string;
+  type: "string" | "int" | "float" | "bool" | "list";
+  description?: string;
+  prefix?: string;
+}
+
+export interface DSPySignature {
+  instructions: string;
+  inputs: DSPyField[];
+  outputs: DSPyField[];
+}
+
+export interface DSPyOptimizationConfig {
+  enabled: boolean;
+  optimizer: "MIPRO" | "MIPROv2" | "BootstrapFewShot" | "BootstrapFewShotWithRandomSearch" | "COPRO";
+  trainingDataRef?: string;
+  metricName?: string;
+  maxBootstrappedDemos?: number;
+  maxLabeledDemos?: number;
+}
+
+export interface DSPyConfig {
+  enabled: boolean;
+  module: "Predict" | "ChainOfThought" | "ReAct";
+  signature: DSPySignature;
+  compiledPromptRef?: string;
+  optimizationConfig?: DSPyOptimizationConfig;
 }

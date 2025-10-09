@@ -206,4 +206,5 @@ go/bin/
 /go/tools/tool-server
 /contrib/memory/doc2vec/bun.lock
 
-.cursor/
+.cursor/go/cmd/controller/controller
+go/cmd/*/controller

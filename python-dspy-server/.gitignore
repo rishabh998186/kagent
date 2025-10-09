@@ -1,0 +1,12 @@
+venv/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Cache directories
+local_cache/
+__pycache__/
+*.pyc
+*.pyo

@@ -118,6 +118,9 @@ type Config struct {
 		Path string
 		Url  string
 	}
+	DSPy struct {
+		ServiceURL string
+	}
 }
 
 func (cfg *Config) SetFlags(commandLine *flag.FlagSet) {
@@ -145,7 +148,7 @@ func (cfg *Config) SetFlags(commandLine *flag.FlagSet) {
 	commandLine.StringVar(&cfg.Database.Url, "postgres-database-url", "postgres://postgres:kagent@db.kagent.svc.cluster.local:5432/crud", "The URL of the PostgreSQL database.")
 
 	commandLine.StringVar(&cfg.WatchNamespaces, "watch-namespaces", "", "The namespaces to watch for .")
-
+	commandLine.StringVar(&cfg.DSPy.ServiceURL, "dspy-service-url", "http://dspy-service:8000", "The URL of the Python DSPy compilation service.")
 	commandLine.Var(&cfg.Streaming.MaxBufSize, "streaming-max-buf-size", "The maximum size of the streaming buffer.")
 	commandLine.Var(&cfg.Streaming.InitialBufSize, "streaming-initial-buf-size", "The initial size of the streaming buffer.")
 	commandLine.DurationVar(&cfg.Streaming.Timeout, "streaming-timeout", 60*time.Second, "The timeout for the streaming connection.")
@@ -458,6 +461,7 @@ func Start(getExtensionConfig GetExtensionConfig) {
 		DbClient:          dbClient,
 		Authorizer:        extensionCfg.Authorizer,
 		Authenticator:     extensionCfg.Authenticator,
+		DSPyServiceURL:    cfg.DSPy.ServiceURL,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create HTTP server")

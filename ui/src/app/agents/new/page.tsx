@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Settings2, PlusCircle, Trash2 } from "lucide-react";
-import { ModelConfig, AgentType } from "@/types";
-import { SystemPromptSection } from "@/components/create/SystemPromptSection";
+import { ModelConfig, AgentType, DSPyConfig } from "@/types";
+import { PromptConfigSection } from "@/components/create/PromptConfigSection";
 import { ModelSelectionSection } from "@/components/create/ModelSelectionSection";
 import { ToolsSection } from "@/components/create/ToolsSection";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,6 +76,8 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
     envPairs: { name: string; value?: string; isSecret?: boolean; secretName?: string; secretKey?: string; optional?: boolean }[];
     isSubmitting: boolean;
     isLoading: boolean;
+    useDSPy: boolean;
+    dspyConfig: DSPyConfig;
     errors: ValidationErrors;
   }
 
@@ -96,6 +98,16 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
     envPairs: [{ name: "", value: "", isSecret: false }],
     isSubmitting: false,
     isLoading: isEditMode,
+    useDSPy: false,
+    dspyConfig: {
+      enabled: false,
+      module: "Predict",
+      signature: {
+        instructions: "",
+        inputs: [{ name: "question", type: "string", description: "" }],
+        outputs: [{ name: "answer", type: "string", description: "" }],
+      },
+    },
     errors: {},
   });
 
@@ -181,6 +193,7 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
       description: state.description,
       type: state.agentType,
       systemPrompt: state.systemPrompt,
+        dspyConfig: state.useDSPy ? state.dspyConfig : undefined,
       modelName: state.selectedModel?.ref || "",
       tools: state.selectedTools,
       byoImage: state.byoImage,
@@ -237,6 +250,7 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
         description: state.description,
         type: state.agentType,
         systemPrompt: state.systemPrompt,
+        dspyConfig: state.useDSPy ? state.dspyConfig : undefined,
         modelName: state.selectedModel?.ref || "",
         stream: true,
         tools: state.selectedTools,
@@ -300,9 +314,9 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
       return <LoadingState />;
     }
 
-    if (error) {
-      return <ErrorState message={error} />;
-    }
+//     if (error) {
+//       return <ErrorState message={error} />;
+//     }
 
     return (
       <div className="min-h-screen p-8">
@@ -390,11 +404,15 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
 
                 {state.agentType === "Declarative" && (
                   <>
-                    <SystemPromptSection 
-                      value={state.systemPrompt} 
-                      onChange={(e) => setState(prev => ({ ...prev, systemPrompt: e.target.value }))} 
-                      onBlur={() => validateField('systemPrompt', state.systemPrompt)}
-                      error={state.errors.systemPrompt} 
+                    <PromptConfigSection 
+                      systemPrompt={state.systemPrompt}
+                      onSystemPromptChange={(e) => setState(prev => ({ ...prev, systemPrompt: e.target.value }))} 
+                      onSystemPromptBlur={() => validateField('systemPrompt', state.systemPrompt)}
+                      systemPromptError={state.errors.systemPrompt}
+                      useDSPy={state.useDSPy}
+                      onDSPyToggle={(enabled) => setState(prev => ({ ...prev, useDSPy: enabled, dspyConfig: { ...prev.dspyConfig, enabled } }))}
+                      dspyConfig={state.dspyConfig}
+                      onDSPyConfigChange={(config) => setState(prev => ({ ...prev, dspyConfig: config }))}
                       disabled={state.isSubmitting || state.isLoading} 
                     />
 
