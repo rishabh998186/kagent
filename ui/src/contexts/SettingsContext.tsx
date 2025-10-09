@@ -31,7 +31,7 @@ interface SettingsProviderProps {
 
 // Default settings
 const DEFAULT_AUTO_REFRESH_ENABLED = true;
-const DEFAULT_AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+const DEFAULT_AUTO_REFRESH_INTERVAL = 5000; // 5 seconds
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
   const [autoRefreshEnabled, setAutoRefreshEnabledState] = useState(DEFAULT_AUTO_REFRESH_ENABLED);
