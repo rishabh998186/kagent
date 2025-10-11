@@ -398,8 +398,9 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
                       disabled={state.isSubmitting || state.isLoading} 
                     />
 
+                    {!loading && models && Array.isArray(models) && (
                     <ModelSelectionSection 
-                      allModels={models} 
+                      allModels={models || []} 
                       selectedModel={state.selectedModel} 
                       setSelectedModel={(model) => {
                         setState(prev => ({ ...prev, selectedModel: model as Pick<ModelConfig, 'ref' | 'model'> | null }));
@@ -409,6 +410,7 @@ function AgentPageContent({ isEditMode, agentName, agentNamespace }: AgentPageCo
                       onChange={(modelRef) => validateField('model', modelRef)}
                       agentNamespace={state.namespace}
                     />
+                    )}
                   </>
                 )}
                 {state.agentType === "BYO" && (
