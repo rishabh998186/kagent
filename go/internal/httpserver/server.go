@@ -20,22 +20,24 @@ import (
 
 const (
 	// API Path constants
-	APIPathHealth      = "/health"
-	APIPathVersion     = "/version"
-	APIPathModelConfig = "/api/modelconfigs"
-	APIPathRuns        = "/api/runs"
-	APIPathSessions    = "/api/sessions"
-	APIPathTasks       = "/api/tasks"
-	APIPathTools       = "/api/tools"
-	APIPathToolServers = "/api/toolservers"
-	APIPathAgents      = "/api/agents"
-	APIPathProviders   = "/api/providers"
-	APIPathModels      = "/api/models"
-	APIPathMemories    = "/api/memories"
-	APIPathNamespaces  = "/api/namespaces"
-	APIPathA2A         = "/api/a2a"
-	APIPathFeedback    = "/api/feedback"
-	APIPathLangGraph   = "/api/langgraph"
+	APIPathHealth          = "/health"
+	APIPathVersion         = "/version"
+	APIPathModelConfig     = "/api/modelconfigs"
+	APIPathRuns            = "/api/runs"
+	APIPathSessions        = "/api/sessions"
+	APIPathTasks           = "/api/tasks"
+	APIPathTools           = "/api/tools"
+	APIPathToolServers     = "/api/toolservers"
+	APIPathToolServerTypes = "/api/toolservertypes"
+	APIPathAgents          = "/api/agents"
+	APIPathProviders       = "/api/providers"
+	APIPathModels          = "/api/models"
+	APIPathMemories        = "/api/memories"
+	APIPathNamespaces      = "/api/namespaces"
+	APIPathA2A             = "/api/a2a"
+	APIPathFeedback        = "/api/feedback"
+	APIPathLangGraph       = "/api/langgraph"
+	APIPathCrewAI          = "/api/crewai"
 )
 
 var defaultModelConfig = types.NamespacedName{
@@ -175,6 +177,9 @@ func (s *HTTPServer) setupRoutes() {
 	s.router.HandleFunc(APIPathToolServers, adaptHandler(s.handlers.ToolServers.HandleCreateToolServer)).Methods(http.MethodPost)
 	s.router.HandleFunc(APIPathToolServers+"/{namespace}/{name}", adaptHandler(s.handlers.ToolServers.HandleDeleteToolServer)).Methods(http.MethodDelete)
 
+	// Tool Server Types
+	s.router.HandleFunc(APIPathToolServerTypes, adaptHandler(s.handlers.ToolServerTypes.HandleListToolServerTypes)).Methods(http.MethodGet)
+
 	// Agents - using database handlers
 	s.router.HandleFunc(APIPathAgents, adaptHandler(s.handlers.Agents.HandleListAgents)).Methods(http.MethodGet)
 	s.router.HandleFunc(APIPathAgents, adaptHandler(s.handlers.Agents.HandleCreateAgent)).Methods(http.MethodPost)
@@ -208,6 +213,13 @@ func (s *HTTPServer) setupRoutes() {
 	s.router.HandleFunc(APIPathLangGraph+"/checkpoints", adaptHandler(s.handlers.Checkpoints.HandleListCheckpoints)).Methods(http.MethodGet)
 	s.router.HandleFunc(APIPathLangGraph+"/checkpoints/writes", adaptHandler(s.handlers.Checkpoints.HandlePutWrites)).Methods(http.MethodPost)
 	s.router.HandleFunc(APIPathLangGraph+"/checkpoints/{thread_id}", adaptHandler(s.handlers.Checkpoints.HandleDeleteThread)).Methods(http.MethodDelete)
+
+	// CrewAI
+	s.router.HandleFunc(APIPathCrewAI+"/memory", adaptHandler(s.handlers.CrewAI.HandleStoreMemory)).Methods(http.MethodPost)
+	s.router.HandleFunc(APIPathCrewAI+"/memory", adaptHandler(s.handlers.CrewAI.HandleGetMemory)).Methods(http.MethodGet)
+	s.router.HandleFunc(APIPathCrewAI+"/memory", adaptHandler(s.handlers.CrewAI.HandleResetMemory)).Methods(http.MethodDelete)
+	s.router.HandleFunc(APIPathCrewAI+"/flows/state", adaptHandler(s.handlers.CrewAI.HandleStoreFlowState)).Methods(http.MethodPost)
+	s.router.HandleFunc(APIPathCrewAI+"/flows/state", adaptHandler(s.handlers.CrewAI.HandleGetFlowState)).Methods(http.MethodGet)
 
 	// A2A
 	s.router.PathPrefix(APIPathA2A + "/{namespace}/{name}").Handler(s.config.A2AHandler)

@@ -88,47 +88,16 @@ jobs:
         if: success()
         working-directory: go
         run: |
-          # Wait for kagent-controller service to be ready
-          kubectl wait --for=condition=Available --timeout=120s deployment/kagent-controller -n kagent
+          # Get the Kind network gateway IP that pods can reach
+          HOST_IP=$(docker network inspect kind -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
+          echo "Detected Kind network gateway: $HOST_IP"
+          export KAGENT_LOCAL_HOST=$HOST_IP
           
-          # Check if LoadBalancer IP is available, otherwise use port-forward
-          LB_IP=$(kubectl get svc -n kagent kagent-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-          
-          if [ -n "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
-            export KAGENT_URL="http://${LB_IP}:8083"
-            echo "Using LoadBalancer IP: $KAGENT_URL"
-          else
-            echo "LoadBalancer IP not available, using port-forward..."
-            # Start port-forward in background
-            kubectl port-forward -n kagent svc/kagent-controller 8083:8083 &
-            PORT_FORWARD_PID=$!
-            
-            # Wait for port-forward to be ready
-            sleep 5
-            
-            # Test connection
-            for i in {1..10}; do
-              if curl -s http://localhost:8083/healthz >/dev/null 2>&1; then
-                echo "Port-forward ready"
-                break
-              fi
-              echo "Waiting for port-forward... ($i/10)"
-              sleep 2
-            done
-            
-            export KAGENT_URL="http://localhost:8083"
-            echo "Using port-forward: $KAGENT_URL"
-          fi
-          
-          echo "Final KAGENT_URL: $KAGENT_URL"
-          
-          # Run the tests
-          go test -v github.com/kagent-dev/kagent/go/test/e2e
-          
-          # Clean up port-forward if it was started
-          if [ -n "$PORT_FORWARD_PID" ]; then
-            kill $PORT_FORWARD_PID 2>/dev/null || true
-          fi
+          export KAGENT_URL="http://$(kubectl get svc -n kagent kagent-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8083"
+          echo "KAGENT_URL: $KAGENT_URL"
+          echo "KAGENT_LOCAL_HOST: $KAGENT_LOCAL_HOST"
+
+          go test -race -v github.com/kagent-dev/kagent/go/test/e2e
       - name: fail print info
         if: failure()
         run: |
@@ -178,7 +147,7 @@ jobs:
       - name: Run cmd/main.go tests
         working-directory: go
         run: |
-          go test -race -skip 'TestE2E.*|TestAutogenClient' -v ./...
+          go test -race -skip 'TestE2E.*' -v ./...
 
   helm-unit-tests:
     env:
