@@ -187,11 +187,10 @@ export async function getAgents(): Promise<BaseResponse<AgentResponse[]>> {
   try {
     const { data } = await fetchApi<BaseResponse<AgentResponse[]>>(`/agents`);
 
-    // Sort by creation time, newest first (so new agents appear at the top)
     const sortedData = data?.sort((a, b) => {
-      const aTime = new Date(a.agent.metadata.creationTimestamp || 0).getTime();
-      const bTime = new Date(b.agent.metadata.creationTimestamp || 0).getTime();
-      return bTime - aTime; // Descending order (newest first)
+      const aRef = k8sRefUtils.toRef(a.agent.metadata.namespace || "", a.agent.metadata.name);
+      const bRef = k8sRefUtils.toRef(b.agent.metadata.namespace || "", b.agent.metadata.name);
+      return aRef.localeCompare(bRef);
     });
 
     return { message: "Successfully fetched agents", data: sortedData };

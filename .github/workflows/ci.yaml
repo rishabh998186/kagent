@@ -102,33 +102,12 @@ jobs:
         if: failure()
         run: |
           echo "::error::Failed to run e2e tests"
-          
-          echo "::group::Service Status"
-          kubectl get svc -n kagent -o wide
-          kubectl describe svc kagent-controller -n kagent
-          echo "::endgroup::"
-          
-          echo "::group::Pod Status"
-          kubectl get pods -n kagent -o wide
+          echo "::error::Kubectl get pods -n kagent"
           kubectl describe pods -n kagent
-          echo "::endgroup::"
-          
-          echo "::group::Events"
-          kubectl get events -n kagent --sort-by='.lastTimestamp'
-          echo "::endgroup::"
-          
-          echo "::group::Agents Status"
-          kubectl get agents -n kagent -o wide
-          echo "::endgroup::"
-          
-          echo "::group::Controller Logs"
-          kubectl logs -n kagent deployment/kagent-controller --tail=100
-          echo "::endgroup::"
-          
-          echo "::group::Connectivity Test"
-          # Test if we can reach the service internally
-          kubectl run debug-test --image=curlimages/curl --rm -i --restart=Never -- curl -v http://kagent-controller.kagent.svc.cluster.local:8083/healthz || true
-          echo "::endgroup::"
+          echo "::error::Kubectl get events -n kagent"
+          kubectl get events -n kagent
+          echo "::error::Kubectl get agents -n kagent"
+          echo "::error::Kubectl logs -n kagent deployment/kagent-controller"
           kubectl logs -n kagent deployment/kagent-controller
 
   go-unit-tests:
