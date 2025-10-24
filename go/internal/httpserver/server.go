@@ -87,10 +87,10 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	// Setup routes
 	s.setupRoutes()
 
-	// Create HTTP server with CORS wrapper
+	// Create HTTP server
 	s.httpServer = &http.Server{
 		Addr:    s.config.BindAddr,
-		Handler: corsMiddleware(s.router),
+		Handler: s.router,
 	}
 
 	// Start the server in a separate goroutine

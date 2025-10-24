@@ -193,6 +193,12 @@ export interface ToolsResponse {
 export interface ResourceMetadata {
   name: string;
   namespace?: string;
+  creationTimestamp?: string;
+  uid?: string;
+  resourceVersion?: string;
+  generation?: number;
+  labels?: Record<string, string>;
+  annotations?: Record<string, string>;
 }
 
 export type ToolProviderType = "McpServer" | "Agent"

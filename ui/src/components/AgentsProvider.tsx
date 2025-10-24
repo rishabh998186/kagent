@@ -1,12 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode, useCallback } from "react";
-import { getAgent as getAgentAction, createAgent } from "@/app/actions/agents";
+import React, { createContext, useContext, ReactNode, useCallback, useMemo } from "react";
+import { getAgent as getAgentAction, createAgent, getAgents } from "@/app/actions/agents";
+import { getTools } from "@/app/actions/tools";
+import { getModels } from "@/app/actions/models";
 import type { Agent, Tool, AgentResponse, BaseResponse, ModelConfig, ToolsResponse, AgentType, EnvVar } from "@/types";
 import { isResourceNameValid } from "@/lib/utils";
 import { useSettings } from "@/contexts/SettingsContext";
 import useSWR from "swr";
-import { createTypedFetcher, buildApiUrl } from "@/lib/fetcher";
 
 interface ValidationErrors {
   name?: string;
@@ -72,29 +73,53 @@ interface AgentsProviderProps {
 }
 
 export function AgentsProvider({ children }: AgentsProviderProps) {
-  const { getSwrConfig } = useSettings();
+  const { autoRefreshEnabled, autoRefreshInterval } = useSettings();
   
-  // Create typed fetchers
-  const agentsFetcher = createTypedFetcher<AgentResponse[]>();
-  const toolsFetcher = createTypedFetcher<ToolsResponse[]>();
-  const modelsFetcher = createTypedFetcher<ModelConfig[]>();
+  // Use existing server action fetchers (they include sorting logic)
+  const agentsFetcher = useCallback(async () => {
+    const result = await getAgents();
+    if (result.error) throw new Error(result.error);
+    return result.data || [];
+  }, []);
+
+  const toolsFetcher = useCallback(async () => {
+    // getTools returns ToolsResponse[] directly, throws on error
+    return await getTools();
+  }, []);
+
+  const modelsFetcher = useCallback(async () => {
+    // Note: models in AgentsProvider appears unused - model selection uses getModelConfigs() directly
+    // Return empty array to satisfy type
+    return [];
+  }, []);
   
-  // SWR hooks for data fetching with auto-refresh
-  const { data: agents = [], error: agentsError, isLoading: agentsLoading, mutate: mutateAgents } = useSWR(
-    buildApiUrl('/agents'),
+  // Memoize SWR config so it's stable and reactive
+  const swrConfig = useMemo(() => ({
+    refreshInterval: autoRefreshEnabled ? autoRefreshInterval : 0,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    dedupingInterval: 0, // Disable deduping to ensure every request goes through
+    revalidateIfStale: true, // Always revalidate if data is stale
+    refreshWhenHidden: false, // Don't refresh when tab is hidden
+    refreshWhenOffline: false, // Don't refresh when offline
+  }), [autoRefreshEnabled, autoRefreshInterval]);
+  
+  // SWR hooks using server actions (already includes alphabetical sorting)
+  const { data: agents = [], error: agentsError, isLoading: agentsLoading, mutate: mutateAgents } = useSWR<AgentResponse[]>(
+    'agents-list',
     agentsFetcher,
-    getSwrConfig()
+    swrConfig
   );
   
-  const { data: tools = [], error: toolsError, isLoading: toolsLoading } = useSWR(
-    buildApiUrl('/tools'),
+  const { data: tools = [], error: toolsError, isLoading: toolsLoading } = useSWR<ToolsResponse[]>(
+    'tools-list',
     toolsFetcher,
     // Tools change less frequently, so less aggressive refresh
     { revalidateOnFocus: false, refreshInterval: undefined }
   );
   
-  const { data: models = [], error: modelsError, isLoading: modelsLoading } = useSWR(
-    buildApiUrl('/models'),
+  const { data: models = [], error: modelsError, isLoading: modelsLoading } = useSWR<ModelConfig[]>(
+    'models-list',
     modelsFetcher,
     // Models change even less frequently
     { revalidateOnFocus: false, refreshInterval: undefined }
