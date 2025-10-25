@@ -238,8 +238,8 @@ func (a *adkApiTranslator) buildManifest(
 
 	// Initialize with empty JSON objects as defaults to ensure secret always has valid JSON
 	// Secret is always created (line 308), so these must never be empty strings
-	var cfgJson string = "{}"
-	var agentCard string = "{}"
+	cfgJson := "{}"
+	agentCard := "{}"
 	var configHash uint64
 	var secretVol []corev1.Volume
 	var secretMounts []corev1.VolumeMount
