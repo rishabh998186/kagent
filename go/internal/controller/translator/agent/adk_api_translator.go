@@ -236,25 +236,41 @@ func (a *adkApiTranslator) buildManifest(
 ) (*AgentOutputs, error) {
 	outputs := &AgentOutputs{}
 
-	// Optional config/card for Inline
+	// Initialize with empty JSON objects as defaults to ensure secret always has valid JSON
+	// Secret is always created (line 308), so these must never be empty strings
+	var cfgJson string = "{}"
+	var agentCard string = "{}"
 	var configHash uint64
 	var secretVol []corev1.Volume
 	var secretMounts []corev1.VolumeMount
-	var cfgJson string
-	var agentCard string
-	if cfg != nil && card != nil {
-		bCfg, err := json.Marshal(cfg)
-		if err != nil {
-			return nil, err
-		}
-		bCard, err := json.Marshal(card)
-		if err != nil {
-			return nil, err
-		}
-		configHash = computeConfigHash(bCfg, bCard)
 
-		cfgJson = string(bCfg)
-		agentCard = string(bCard)
+	if cfg != nil || card != nil {
+		var bCfg, bCard []byte
+		var err error
+
+		if cfg != nil {
+			bCfg, err = json.Marshal(cfg)
+			if err != nil {
+				return nil, err
+			}
+			cfgJson = string(bCfg)
+		} else {
+			// Use default empty JSON object
+			bCfg = []byte("{}")
+		}
+
+		if card != nil {
+			bCard, err = json.Marshal(card)
+			if err != nil {
+				return nil, err
+			}
+			agentCard = string(bCard)
+		} else {
+			// Use default empty JSON object
+			bCard = []byte("{}")
+		}
+
+		configHash = computeConfigHash(bCfg, bCard)
 
 		secretVol = []corev1.Volume{{
 			Name: "config",
