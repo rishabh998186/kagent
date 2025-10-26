@@ -9,52 +9,54 @@ import (
 	"github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/common"
 )
 
-//go:embed templates/* templates/agent/* dice-agent-instruction.md
+//go:embed templates/* templates/agent/*
 var templatesFS embed.FS
 
-// PythonGenerator generates Python ADK projects
-type PythonGenerator struct {
+// LangGraphGenerator generates Python LangGraph projects
+type LangGraphGenerator struct {
 	*common.BaseGenerator
+	versions *common.FrameworkVersions
 }
 
-// NewPythonGenerator creates a new ADK Python generator
-func NewPythonGenerator() *PythonGenerator {
-	return &PythonGenerator{
+// NewLangGraphGenerator creates a new LangGraph Python generator
+func NewLangGraphGenerator() *LangGraphGenerator {
+	return &LangGraphGenerator{
 		BaseGenerator: common.NewBaseGenerator(templatesFS),
+		versions:      common.DefaultVersions(),
 	}
 }
 
 // GetFrameworkName returns the framework name
-func (g *PythonGenerator) GetFrameworkName() string {
-	return "adk"
+func (g *LangGraphGenerator) GetFrameworkName() string {
+	return "langgraph"
 }
 
 // GetLanguage returns the language
-func (g *PythonGenerator) GetLanguage() string {
+func (g *LangGraphGenerator) GetLanguage() string {
 	return "python"
 }
 
-// Generate creates a new Python ADK project
-func (g *PythonGenerator) Generate(projectDir, agentName, instruction, modelProvider, modelName, description string, verbose bool, kagentVersion string) error {
+// Generate creates a new Python LangGraph project
+func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelProvider, modelName, description string, verbose bool, kagentVersion string) error {
 	// Create the main project directory structure
 	subDir := filepath.Join(projectDir, agentName)
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		return fmt.Errorf("failed to create subdirectory: %v", err)
 	}
-	// Load default instructions if none provided
+
+	// Use default instruction if none provided
 	if instruction == "" {
+		instruction = "You are a helpful AI assistant built with LangGraph framework."
 		if verbose {
-			fmt.Println("🎲 No instruction provided, using default dice-roller instructions")
+			fmt.Println("ℹ️  No instruction provided, using default LangGraph instructions")
 		}
-		defaultInstructions, _ := templatesFS.ReadFile("dice-agent-instruction.md")
-		instruction = string(defaultInstructions)
 	}
 
-	// agent project configuration
+	// Agent project configuration
 	agentConfig := common.AgentConfig{
 		Name:          agentName,
 		Directory:     projectDir,
-		Framework:     "adk",
+		Framework:     "langgraph",
 		Language:      "python",
 		Verbose:       verbose,
 		Instruction:   instruction,
@@ -64,7 +66,7 @@ func (g *PythonGenerator) Generate(projectDir, agentName, instruction, modelProv
 	}
 
 	// Use the base generator to create the project
-	if err := g.GenerateProject(agentConfig); err != nil {
+	if err := g.BaseGenerator.GenerateProject(agentConfig); err != nil {
 		return fmt.Errorf("failed to generate project: %v", err)
 	}
 
@@ -87,7 +89,6 @@ func (g *PythonGenerator) Generate(projectDir, agentName, instruction, modelProv
 	// Move agent files from agent/ subdirectory to {agentName} subdirectory
 	agentDir := filepath.Join(projectDir, "agent")
 	if _, err := os.Stat(agentDir); err == nil {
-		// Move all files from agent/ to project subdirectory
 		entries, err := os.ReadDir(agentDir)
 		if err != nil {
 			return fmt.Errorf("failed to read agent directory: %v", err)
@@ -110,27 +111,28 @@ func (g *PythonGenerator) Generate(projectDir, agentName, instruction, modelProv
 		}
 	}
 
-	fmt.Printf("✅ Successfully created %s project in %s\n", agentConfig.Framework, projectDir)
-	fmt.Printf("🤖 Model configuration for project: %s (%s)\n", agentConfig.ModelProvider, agentConfig.ModelName)
+	g.printSuccessMessage(agentConfig)
+	return nil
+}
+
+func (g *LangGraphGenerator) printSuccessMessage(config common.AgentConfig) {
+	fmt.Printf("✅ Successfully created %s project in %s\n", config.Framework, config.Directory)
+	fmt.Printf("🤖 Model configuration for project: %s (%s)\n", config.ModelProvider, config.ModelName)
 	fmt.Printf("📁 Project structure:\n")
-	fmt.Printf("   %s/\n", agentConfig.Name)
-	fmt.Printf("   ├── %s/\n", agentConfig.Name)
+	fmt.Printf("   %s/\n", config.Name)
+	fmt.Printf("   ├── %s/\n", config.Name)
 	fmt.Printf("   │   ├── __init__.py\n")
-	fmt.Printf("   │   ├── agent.py\n")
+	fmt.Printf("   │   ├── graph.py\n")
 	fmt.Printf("   │   └── agent-card.json\n")
 	fmt.Printf("   ├── %s\n", common.ManifestFileName)
 	fmt.Printf("   ├── pyproject.toml\n")
 	fmt.Printf("   ├── Dockerfile\n")
 	fmt.Printf("   └── README.md\n")
 	fmt.Printf("\n🚀 Next steps:\n")
-	fmt.Printf("   1. cd %s\n", agentConfig.Name)
-	fmt.Printf("   2. Customize the agent in %s/agent.py\n", agentConfig.Name)
-	fmt.Printf("   3. Build the agent image and push it to the local registry\n")
-	fmt.Printf("      kagent build %s --push\n", agentConfig.Name)
-	fmt.Printf("   4. Deploy the agent to your local cluster\n")
-	fmt.Printf("      kagent deploy %s --api-key-secret <secret-name>\n", agentConfig.Name)
-	fmt.Printf("      Or use --api-key for convenience: kagent deploy %s --api-key <api-key>\n", agentConfig.Name)
-	fmt.Printf("      Support for using a credential file is coming soon\n")
-
-	return nil
+	fmt.Printf("   1. cd %s\n", config.Name)
+	fmt.Printf("   2. Customize the graph in %s/graph.py\n", config.Name)
+	fmt.Printf("   3. Build the agent image:\n")
+	fmt.Printf("      kagent build %s --push\n", config.Name)
+	fmt.Printf("   4. Deploy the agent:\n")
+	fmt.Printf("      kagent deploy %s --api-key <your-api-key>\n", config.Name)
 }

@@ -75,7 +75,7 @@ func DeployCmd(ctx context.Context, cfg *DeployCfg) error {
 		}
 	} else if cfg.APIKey != "" {
 		// Create new secret with provided API key
-		secretName = fmt.Sprintf("%s-%s", manifest.Name, strings.ToLower(manifest.ModelProvider))
+		secretName = fmt.Sprintf("%s-%s", strings.ReplaceAll(manifest.Name, "_", "-"), strings.ToLower(manifest.ModelProvider))
 		if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, cfg.Config.Verbose); err != nil {
 			return err
 		}
@@ -223,7 +223,7 @@ func createAgentCRD(ctx context.Context, k8sClient client.Client, cfg *DeployCfg
 	// Create the Agent CRD
 	agent := &v1alpha2.Agent{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      manifest.Name,
+			Name:      strings.ReplaceAll(manifest.Name, "_", "-"),
 			Namespace: cfg.Config.Namespace,
 		},
 		Spec: v1alpha2.AgentSpec{
@@ -254,7 +254,7 @@ func createAgentCRD(ctx context.Context, k8sClient client.Client, cfg *DeployCfg
 
 	// Check if agent already exists
 	existingAgent := &v1alpha2.Agent{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: cfg.Config.Namespace, Name: manifest.Name}, existingAgent)
+	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: cfg.Config.Namespace, Name: strings.ReplaceAll(manifest.Name, "_", "-")}, existingAgent)
 
 	if err != nil {
 		if errors.IsNotFound(err) {

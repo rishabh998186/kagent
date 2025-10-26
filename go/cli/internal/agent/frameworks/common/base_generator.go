@@ -95,7 +95,11 @@ func (g *BaseGenerator) GenerateProject(config AgentConfig) error {
 
 // renderTemplate renders a template string with the provided data
 func (g *BaseGenerator) renderTemplate(tmplContent string, data interface{}) (string, error) {
-	tmpl, err := template.New("template").Parse(tmplContent)
+	tmpl, err := template.New("template").Funcs(template.FuncMap{
+		"ToPascalCase": ToPascalCase,
+		"ToUpper":      ToUpper,
+	}).Parse(tmplContent)
+
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)
 	}
