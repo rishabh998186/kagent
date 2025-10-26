@@ -116,9 +116,9 @@ func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelP
 }
 
 func (g *LangGraphGenerator) printSuccessMessage(config common.AgentConfig) {
-	fmt.Printf("✅ Successfully created %s project in %s\n", config.Framework, config.Directory)
-	fmt.Printf("🤖 Model configuration for project: %s (%s)\n", config.ModelProvider, config.ModelName)
-	fmt.Printf("📁 Project structure:\n")
+	fmt.Printf("   Successfully created %s project in %s\n", config.Framework, config.Directory)
+	fmt.Printf("   Model configuration for project: %s (%s)\n", config.ModelProvider, config.ModelName)
+	fmt.Printf("   Project structure:\n")
 	fmt.Printf("   %s/\n", config.Name)
 	fmt.Printf("   ├── %s/\n", config.Name)
 	fmt.Printf("   │   ├── __init__.py\n")
@@ -128,7 +128,7 @@ func (g *LangGraphGenerator) printSuccessMessage(config common.AgentConfig) {
 	fmt.Printf("   ├── pyproject.toml\n")
 	fmt.Printf("   ├── Dockerfile\n")
 	fmt.Printf("   └── README.md\n")
-	fmt.Printf("\n🚀 Next steps:\n")
+	fmt.Printf("\n  Next steps:\n")
 	fmt.Printf("   1. cd %s\n", config.Name)
 	fmt.Printf("   2. Customize the graph in %s/graph.py\n", config.Name)
 	fmt.Printf("   3. Build the agent image:\n")

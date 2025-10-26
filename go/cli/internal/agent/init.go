@@ -84,9 +84,9 @@ func InitAgent(config InitConfig) error {
 	}
 
 	if config.Verbose {
-		fmt.Printf("🚀 Initializing %s agent with %s framework\n", config.AgentName, framework)
-		fmt.Printf("📁 Output directory: %s\n", absOutputDir)
-		fmt.Printf("🤖 Model: %s/%s\n", config.ModelProvider, config.ModelName)
+		fmt.Printf("Initializing %s agent with %s framework\n", config.AgentName, framework)
+		fmt.Printf("Output directory: %s\n", absOutputDir)
+		fmt.Printf("Model: %s/%s\n", config.ModelProvider, config.ModelName)
 	}
 
 	// Generate the project
