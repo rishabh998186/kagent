@@ -213,7 +213,7 @@ export function AgentDetailsSidebar({ selectedAgentName, currentAgent, allTools 
   };
 
     // Check if agent is BYO type
-  const isBYOAgent = selectedTeam?.agent.spec.type === "BYO";
+  const isDeclarativeAgent = selectedTeam?.agent.spec.type === "Declarative";
   
   return (
     <>
@@ -240,7 +240,7 @@ export function AgentDetailsSidebar({ selectedAgentName, currentAgent, allTools 
               </div>
               <p className="text-sm flex px-2 text-muted-foreground">{selectedTeam?.agent.spec.description}</p>
             </SidebarGroup>
-            {!isBYOAgent && (
+            {isDeclarativeAgent &&(
               <SidebarGroup className="group-data-[collapsible=icon]:hidden">
                 <SidebarGroupLabel>Tools & Agents</SidebarGroupLabel>
                 {selectedTeam && renderAgentTools(selectedTeam.tools)}
