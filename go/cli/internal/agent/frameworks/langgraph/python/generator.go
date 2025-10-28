@@ -48,7 +48,7 @@ func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelP
 	if instruction == "" {
 		instruction = "You are a helpful AI assistant built with LangGraph framework."
 		if verbose {
-			fmt.Println("ℹ️  No instruction provided, using default LangGraph instructions")
+			fmt.Println("ℹ  No instruction provided, using default LangGraph instructions")
 		}
 	}
 
@@ -66,7 +66,7 @@ func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelP
 	}
 
 	// Use the base generator to create the project
-	if err := g.BaseGenerator.GenerateProject(agentConfig); err != nil {
+	if err := g.GenerateProject(agentConfig); err != nil {
 		return fmt.Errorf("failed to generate project: %v", err)
 	}
 

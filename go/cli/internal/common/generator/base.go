@@ -169,5 +169,11 @@ func (g *BaseGenerator) ReadTemplateFile(templatePath string) ([]byte, error) {
 
 // ToPascalCase converts a string to PascalCase (e.g., "hello_world" -> "HelloWorld")
 func ToPascalCase(s string) string {
-	return strings.ReplaceAll(strings.Title(strings.ReplaceAll(s, "_", " ")), " ", "")
+	words := strings.Split(s, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(word[:1]) + word[1:]
+		}
+	}
+	return strings.Join(words, "")
 }

@@ -66,7 +66,7 @@ func (g *CrewAIGenerator) Generate(projectDir, agentName, instruction, modelProv
 	}
 
 	// Use the base generator to create the project
-	if err := g.BaseGenerator.GenerateProject(agentConfig); err != nil {
+	if err := g.GenerateProject(agentConfig); err != nil {
 		return fmt.Errorf("failed to generate project: %v", err)
 	}
 
