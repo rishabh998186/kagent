@@ -1,8 +1,8 @@
 package common
 
 import (
-        "io/fs"
 	"fmt"
+	"io/fs"
 	"strings"
 	"text/template"
 
@@ -53,7 +53,7 @@ func (g *BaseGenerator) renderTemplate(tmplContent string, data interface{}) (st
 	tmpl, err := template.New("template").Funcs(template.FuncMap{
 		"ToPascalCase": ToPascalCase,
 		"ToUpper":      ToUpper,
-                "upper":        ToUpper,
+		"upper":        ToUpper,
 	}).Parse(tmplContent)
 
 	if err != nil {
