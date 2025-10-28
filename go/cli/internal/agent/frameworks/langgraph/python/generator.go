@@ -56,7 +56,7 @@ func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelP
 	agentConfig := common.AgentConfig{
 		Name:          agentName,
 		Directory:     projectDir,
-		Framework:     "langgraph",
+		Framework:     g.GetFrameworkName(),
 		Language:      "python",
 		Verbose:       verbose,
 		Instruction:   instruction,

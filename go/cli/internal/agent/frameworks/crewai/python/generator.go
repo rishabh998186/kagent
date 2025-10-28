@@ -56,7 +56,7 @@ func (g *CrewAIGenerator) Generate(projectDir, agentName, instruction, modelProv
 	agentConfig := common.AgentConfig{
 		Name:          agentName,
 		Directory:     projectDir,
-		Framework:     "crewai",
+		Framework:     g.GetFrameworkName(),
 		Language:      "python",
 		Verbose:       verbose,
 		Instruction:   instruction,
