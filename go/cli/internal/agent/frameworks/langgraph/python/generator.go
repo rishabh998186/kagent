@@ -78,6 +78,7 @@ func (g *LangGraphGenerator) Generate(projectDir, agentName, instruction, modelP
 		agentConfig.ModelProvider,
 		agentConfig.ModelName,
 		description,
+		nil,
 	)
 
 	// Save the manifest using the Manager

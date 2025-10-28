@@ -78,6 +78,7 @@ func (g *CrewAIGenerator) Generate(projectDir, agentName, instruction, modelProv
 		agentConfig.ModelProvider,
 		agentConfig.ModelName,
 		description,
+		nil,
 	)
 
 	// Save the manifest using the Manager

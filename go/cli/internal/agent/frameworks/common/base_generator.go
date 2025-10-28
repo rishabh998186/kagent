@@ -1,7 +1,10 @@
 package common
 
 import (
-	"io/fs"
+        "io/fs"
+	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/kagent-dev/kagent/go/cli/internal/common/generator"
 )
@@ -50,11 +53,18 @@ func (g *BaseGenerator) renderTemplate(tmplContent string, data interface{}) (st
 	tmpl, err := template.New("template").Funcs(template.FuncMap{
 		"ToPascalCase": ToPascalCase,
 		"ToUpper":      ToUpper,
+                "upper":        ToUpper,
 	}).Parse(tmplContent)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)
 	}
+	var result strings.Builder
+	if err := tmpl.Execute(&result, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return result.String(), nil
 }
 
 // GenerateProject generates a new project using the provided templates.
@@ -67,4 +77,11 @@ func (g *BaseGenerator) GenerateProject(config AgentConfig) error {
 // This delegates to the shared generator implementation.
 func (g *BaseGenerator) RenderTemplate(tmplContent string, data interface{}) (string, error) {
 	return g.BaseGenerator.RenderTemplate(tmplContent, data)
+}
+
+// NewBaseGenerator creates a new BaseGenerator with the given template files
+func NewBaseGenerator(templateFiles fs.FS) *BaseGenerator {
+	return &BaseGenerator{
+		BaseGenerator: generator.NewBaseGenerator(templateFiles, "templates"),
+	}
 }

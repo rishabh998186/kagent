@@ -62,10 +62,6 @@ type DeployCfg struct {
 	DryRun bool
 }
 
-func sanitizeResourceName(name string) string {
-	return strings.ReplaceAll(name, "_", "-")
-}
-
 // DeployCmd deploys an agent to Kubernetes
 func DeployCmd(ctx context.Context, cfg *DeployCfg) error {
 	// Step 1: Validate and load project
@@ -204,17 +200,6 @@ func useExistingSecret(ctx context.Context, k8sClient client.Client, cfg *Deploy
 		if err := verifySecretExists(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar); err != nil {
 			return "", err
 		}
-		if cfg.Config.Verbose {
-			fmt.Printf("Using existing secret '%s' in namespace '%s'\n", secretName, cfg.Config.Namespace)
-		}
-	} else if cfg.APIKey != "" {
-		// Create new secret with provided API key
-		secretName = fmt.Sprintf("%s-%s", sanitizeResourceName(manifest.Name), strings.ToLower(manifest.ModelProvider))
-		if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, cfg.Config.Verbose); err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("either --api-key or --api-key-secret must be provided")
 	}
 
 	if IsVerbose(cfg.Config) && !cfg.DryRun {
@@ -418,8 +403,8 @@ func determineImageName(configImage, agentName string) string {
 func buildAgentCRD(namespace string, manifest *common.AgentManifest, imageName, secretName, apiKeyEnvVar string) *v1alpha2.Agent {
 	agent := &v1alpha2.Agent{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sanitizeResourceName(manifest.Name),
-			Namespace: cfg.Config.Namespace,
+			Name:      manifest.Name,
+			Namespace: namespace,
 		},
 		Spec: v1alpha2.AgentSpec{
 			Type:        v1alpha2.AgentType_BYO,
@@ -458,7 +443,7 @@ func buildSecretEnvVar(envVarName, secretName string) corev1.EnvVar {
 // createOrUpdateAgent creates a new agent or updates an existing one
 func createOrUpdateAgent(ctx context.Context, k8sClient client.Client, agent *v1alpha2.Agent, namespace, name string, verbose bool) error {
 	existingAgent := &v1alpha2.Agent{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: cfg.Config.Namespace, Name: sanitizeResourceName(manifest.Name)}, existingAgent)
+	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, existingAgent)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
