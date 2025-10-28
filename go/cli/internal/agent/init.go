@@ -12,10 +12,17 @@ import (
 	langgraph "github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/langgraph/python"
 )
 
+// Default model configuration
+const (
+	DefaultModelProvider = "Gemini"
+	DefaultModelName     = "gemini-2.0-flash"
+)
+
 // InitConfig holds configuration for agent initialization
 type InitConfig struct {
 	AgentName     string
 	Framework     string
+	Language      string
 	Instruction   string
 	ModelProvider string
 	ModelName     string
@@ -52,6 +59,15 @@ func InitAgent(config InitConfig) error {
 		framework = "adk" // Default to ADK
 	}
 
+	// Normalize and validate language (keep this per @petej's request)
+	language := strings.ToLower(config.Language)
+	if language == "" {
+		language = "python" // Default to Python
+	}
+	if language != "python" {
+		return fmt.Errorf("unsupported language: %s. Only 'python' is supported for now", language)
+	}
+
 	// Get the appropriate generator
 	generator, err := registry.Get(framework)
 	if err != nil {
@@ -77,14 +93,14 @@ func InitAgent(config InitConfig) error {
 
 	// Set default model provider and name if not specified
 	if config.ModelProvider == "" {
-		config.ModelProvider = "Gemini"
+		config.ModelProvider = DefaultModelProvider
 	}
 	if config.ModelName == "" {
-		config.ModelName = "Gemini-2.0-flash"
+		config.ModelName = DefaultModelName
 	}
 
 	if config.Verbose {
-		fmt.Printf("Initializing %s agent with %s framework\n", config.AgentName, framework)
+		fmt.Printf("Initializing %s agent with %s framework (language: %s)\n", config.AgentName, framework, language)
 		fmt.Printf("Output directory: %s\n", absOutputDir)
 		fmt.Printf("Model: %s/%s\n", config.ModelProvider, config.ModelName)
 	}

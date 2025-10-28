@@ -62,6 +62,10 @@ type DeployCfg struct {
 	DryRun bool
 }
 
+func sanitizeResourceName(name string) string {
+	return strings.ReplaceAll(name, "_", "-")
+}
+
 // DeployCmd deploys an agent to Kubernetes
 func DeployCmd(ctx context.Context, cfg *DeployCfg) error {
 	// Step 1: Validate and load project
@@ -205,7 +209,7 @@ func useExistingSecret(ctx context.Context, k8sClient client.Client, cfg *Deploy
 		}
 	} else if cfg.APIKey != "" {
 		// Create new secret with provided API key
-		secretName = fmt.Sprintf("%s-%s", strings.ReplaceAll(manifest.Name, "_", "-"), strings.ToLower(manifest.ModelProvider))
+		secretName = fmt.Sprintf("%s-%s", sanitizeResourceName(manifest.Name), strings.ToLower(manifest.ModelProvider))
 		if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, cfg.Config.Verbose); err != nil {
 			return err
 		}
@@ -414,7 +418,7 @@ func determineImageName(configImage, agentName string) string {
 func buildAgentCRD(namespace string, manifest *common.AgentManifest, imageName, secretName, apiKeyEnvVar string) *v1alpha2.Agent {
 	agent := &v1alpha2.Agent{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.ReplaceAll(manifest.Name, "_", "-"),
+			Name:      sanitizeResourceName(manifest.Name),
 			Namespace: cfg.Config.Namespace,
 		},
 		Spec: v1alpha2.AgentSpec{
@@ -454,7 +458,7 @@ func buildSecretEnvVar(envVarName, secretName string) corev1.EnvVar {
 // createOrUpdateAgent creates a new agent or updates an existing one
 func createOrUpdateAgent(ctx context.Context, k8sClient client.Client, agent *v1alpha2.Agent, namespace, name string, verbose bool) error {
 	existingAgent := &v1alpha2.Agent{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: cfg.Config.Namespace, Name: strings.ReplaceAll(manifest.Name, "_", "-")}, existingAgent)
+	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: cfg.Config.Namespace, Name: sanitizeResourceName(manifest.Name)}, existingAgent)
 
 	if err != nil {
 		if errors.IsNotFound(err) {

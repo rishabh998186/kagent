@@ -17,8 +17,8 @@ type ADKGenerator struct {
 	*common.BaseGenerator
 }
 
-// NewPythonGenerator creates a new ADK Python generator
-func NewPythonGenerator() *ADKGenerator {
+// NewADKGenerator creates a new ADK Python generator
+func NewADKGenerator() *ADKGenerator {
 	return &ADKGenerator{
 		BaseGenerator: common.NewBaseGenerator(templatesFS),
 	}

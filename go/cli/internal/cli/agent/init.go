@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kagent-dev/kagent/go/api/v1alpha2"
+	"github.com/kagent-dev/kagent/go/cli/internal/agent"
 	"github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/adk/python"
 	"github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/common"
 	crewai "github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/crewai/python"
@@ -44,6 +45,14 @@ func InitCmd(cfg *InitCfg) error {
 		return fmt.Errorf("invalid framework: %w", err)
 	}
 
+	language := strings.ToLower(cfg.Language)
+	if language == "" {
+		language = "python" // Default to Python
+	}
+	if language != "python" {
+		return fmt.Errorf("unsupported language: %s. Only 'python' is supported for now", language)
+	}
+
 	// Validate model provider if specified
 	if cfg.ModelProvider != "" {
 		if err := validateModelProvider(cfg.ModelProvider); err != nil {
@@ -56,12 +65,12 @@ func InitCmd(cfg *InitCfg) error {
 
 	// Set default model provider if not specified
 	if cfg.ModelProvider == "" {
-		cfg.ModelProvider = "gemini"
+		cfg.ModelProvider = strings.ToLower(agent.DefaultModelProvider)
 	}
 
 	// Set default model name if not specified
 	if cfg.ModelName == "" {
-		cfg.ModelName = "gemini-2.0-flash"
+		cfg.ModelName = agent.DefaultModelName
 	}
 
 	// Get current working directory for project creation
@@ -80,7 +89,7 @@ func InitCmd(cfg *InitCfg) error {
 	registry := common.NewGeneratorRegistry()
 
 	// Register ADK generator
-	if err := registry.Register(python.NewPythonGenerator()); err != nil {
+	if err := registry.Register(python.NewADKGenerator()); err != nil {
 		return fmt.Errorf("failed to register ADK generator: %w", err)
 	}
 
@@ -114,9 +123,9 @@ func InitCmd(cfg *InitCfg) error {
 	kagentVersion := version.Version
 
 	if cfg.Config.Verbose {
-		fmt.Printf("🚀 Initializing %s agent with %s framework\n", cfg.AgentName, framework)
-		fmt.Printf("📁 Output directory: %s\n", projectDir)
-		fmt.Printf("🤖 Model: %s/%s\n", cfg.ModelProvider, cfg.ModelName)
+		fmt.Printf("🚀 Initializing %s agent with %s framework (language: %s)\n", cfg.AgentName, framework, language)
+		fmt.Printf(" Output directory: %s\n", projectDir)
+		fmt.Printf(" Model: %s/%s\n", cfg.ModelProvider, cfg.ModelName)
 	}
 
 	// Generate the project
