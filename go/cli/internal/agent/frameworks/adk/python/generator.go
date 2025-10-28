@@ -13,29 +13,29 @@ import (
 var templatesFS embed.FS
 
 // PythonGenerator generates Python ADK projects
-type PythonGenerator struct {
+type ADKGenerator struct {
 	*common.BaseGenerator
 }
 
 // NewPythonGenerator creates a new ADK Python generator
-func NewPythonGenerator() *PythonGenerator {
-	return &PythonGenerator{
+func NewPythonGenerator() *ADKGenerator {
+	return &ADKGenerator{
 		BaseGenerator: common.NewBaseGenerator(templatesFS),
 	}
 }
 
 // GetFrameworkName returns the framework name
-func (g *PythonGenerator) GetFrameworkName() string {
+func (g *ADKGenerator) GetFrameworkName() string {
 	return "adk"
 }
 
 // GetLanguage returns the language
-func (g *PythonGenerator) GetLanguage() string {
+func (g *ADKGenerator) GetLanguage() string {
 	return "python"
 }
 
 // Generate creates a new Python ADK project
-func (g *PythonGenerator) Generate(projectDir, agentName, instruction, modelProvider, modelName, description string, verbose bool, kagentVersion string) error {
+func (g *ADKGenerator) Generate(projectDir, agentName, instruction, modelProvider, modelName, description string, verbose bool, kagentVersion string) error {
 	// Create the main project directory structure
 	subDir := filepath.Join(projectDir, agentName)
 	if err := os.MkdirAll(subDir, 0755); err != nil {

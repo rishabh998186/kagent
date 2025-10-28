@@ -36,7 +36,7 @@ func InitAgent(config InitConfig) error {
 	registry := common.NewGeneratorRegistry()
 
 	// Register all available generators
-	if err := registry.Register(python.NewPythonGenerator()); err != nil {
+	if err := registry.Register(python.NewADKGenerator()); err != nil {
 		return fmt.Errorf("failed to register ADK generator: %w", err)
 	}
 	if err := registry.Register(crewai.NewCrewAIGenerator()); err != nil {
