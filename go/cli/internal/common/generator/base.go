@@ -125,6 +125,7 @@ func (g *BaseGenerator) GenerateProject(config ProjectConfig) error {
 
 // RenderTemplate renders a template string with the provided data.
 // This is the core template rendering logic used by all generators.
+//
 //nolint:unused
 func (g *BaseGenerator) RenderTemplate(tmplContent string, data interface{}) (string, error) {
 	funcMap := template.FuncMap{
