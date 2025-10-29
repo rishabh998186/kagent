@@ -1,10 +1,7 @@
 package common
 
 import (
-	"fmt"
 	"io/fs"
-	"strings"
-	"text/template"
 
 	"github.com/kagent-dev/kagent/go/cli/internal/common/generator"
 )
@@ -46,25 +43,6 @@ func (c AgentConfig) ShouldSkipPath(path string) bool {
 // This now wraps the shared generator.BaseGenerator.
 type BaseGenerator struct {
 	*generator.BaseGenerator
-}
-
-// renderTemplate renders a template string with the provided data
-func (g *BaseGenerator) renderTemplate(tmplContent string, data interface{}) (string, error) {
-	tmpl, err := template.New("template").Funcs(template.FuncMap{
-		"ToPascalCase": ToPascalCase,
-		"ToUpper":      ToUpper,
-		"upper":        ToUpper,
-	}).Parse(tmplContent)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
-	}
-	var result strings.Builder
-	if err := tmpl.Execute(&result, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return result.String(), nil
 }
 
 // GenerateProject generates a new project using the provided templates.
