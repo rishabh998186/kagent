@@ -62,6 +62,11 @@ type DeployCfg struct {
 	DryRun bool
 }
 
+// sanitizeResourceName converts underscores to hyphens for Kubernetes resource names
+func sanitizeResourceName(name string) string {
+	return strings.ReplaceAll(name, "_", "-")
+}
+
 // DeployCmd deploys an agent to Kubernetes
 func DeployCmd(ctx context.Context, cfg *DeployCfg) error {
 	// Step 1: Validate and load project
@@ -211,7 +216,7 @@ func useExistingSecret(ctx context.Context, k8sClient client.Client, cfg *Deploy
 
 // createNewSecret creates a new Kubernetes secret with the provided API key
 func createNewSecret(ctx context.Context, k8sClient client.Client, cfg *DeployCfg, manifest *common.AgentManifest, apiKeyEnvVar string) (string, error) {
-	secretName := fmt.Sprintf("%s-%s", manifest.Name, strings.ToLower(manifest.ModelProvider))
+	secretName := fmt.Sprintf("%s-%s", sanitizeResourceName(manifest.Name), strings.ToLower(manifest.ModelProvider))
 
 	if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, IsVerbose(cfg.Config), cfg.DryRun); err != nil {
 		return "", err
@@ -403,7 +408,7 @@ func determineImageName(configImage, agentName string) string {
 func buildAgentCRD(namespace string, manifest *common.AgentManifest, imageName, secretName, apiKeyEnvVar string) *v1alpha2.Agent {
 	agent := &v1alpha2.Agent{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      manifest.Name,
+			Name:      sanitizeResourceName(manifest.Name),
 			Namespace: namespace,
 		},
 		Spec: v1alpha2.AgentSpec{
