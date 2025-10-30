@@ -346,7 +346,15 @@ func handleEnvFileSecret(ctx context.Context, k8sClient client.Client, cfg *Depl
 // createNewSecret creates a new Kubernetes secret with the provided API key
 func createNewSecret(ctx context.Context, k8sClient client.Client, cfg *DeployCfg, manifest *common.AgentManifest, apiKeyEnvVar string) (string, error) {
 	secretName := fmt.Sprintf("%s-%s", sanitizeResourceName(manifest.Name), strings.ToLower(manifest.ModelProvider))
-// parseEnvFile reads and parses a .env file, returning a map of environment variables
+
+	if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, IsVerbose(cfg.Config), cfg.DryRun); err != nil {
+		return "", err
+	}
+
+	return secretName, nil
+}
+
+// parseEnvFile reads and parses a .env file, returning a map of environment variable
 func parseEnvFile(filePath string) (map[string]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
