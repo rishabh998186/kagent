@@ -214,14 +214,6 @@ func extractEnvVarsFromManifest(manifest *common.AgentManifest) []string {
 
 	// Extract from MCP servers
 	for _, mcpServer := range manifest.McpServers {
-		if mcpServer.URL != "" {
-			matches := envVarRegex.FindAllStringSubmatch(mcpServer.URL, -1)
-			for _, match := range matches {
-				varName := extractEnvVarName(match)
-				envVarSet[varName] = true
-			}
-		}
-
 		// Check headers
 		for _, headerValue := range mcpServer.Headers {
 			matches := envVarRegex.FindAllStringSubmatch(headerValue, -1)
@@ -341,17 +333,6 @@ func handleEnvFileSecret(ctx context.Context, k8sClient client.Client, cfg *Depl
 		SecretName: secretName,
 		EnvVarKeys: keys,
 	}, nil
-}
-
-// createNewSecret creates a new Kubernetes secret with the provided API key
-func createNewSecret(ctx context.Context, k8sClient client.Client, cfg *DeployCfg, manifest *common.AgentManifest, apiKeyEnvVar string) (string, error) {
-	secretName := fmt.Sprintf("%s-%s", sanitizeResourceName(manifest.Name), strings.ToLower(manifest.ModelProvider))
-
-	if err := createSecret(ctx, k8sClient, cfg.Config.Namespace, secretName, apiKeyEnvVar, cfg.APIKey, IsVerbose(cfg.Config), cfg.DryRun); err != nil {
-		return "", err
-	}
-
-	return secretName, nil
 }
 
 // parseEnvFile reads and parses a .env file, returning a map of environment variable
