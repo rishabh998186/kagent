@@ -26,7 +26,7 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
 {{- end }}
 {{- range .EnvVars }}
-      - {{.}}=${{"{"}}{{.}}{{"}"}}
+      - {{.}}=${{"${"}}{{"}"}}{{.}}{{"}"}}
 {{- end }}
 {{- range .McpServers }}
 {{- if eq .Type "command" }}
@@ -35,6 +35,12 @@ services:
     build:
       context: ./{{.Name}}
       dockerfile: Dockerfile
+       {{- if .Env }}
+  environment:
+    {{- range .Env }}
+    - {{.}}
+    {{- end }}
+  {{- end }}
     expose:
       - "3000"
 {{- end }}

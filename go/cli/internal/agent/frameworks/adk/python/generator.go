@@ -62,7 +62,7 @@ func (g *ADKGenerator) Generate(projectDir, agentName, instruction, modelProvide
 		ModelName:     modelName,
 		KagentVersion: kagentVersion,
 		// Empty MCP servers on init
-		McpServers:    nil,
+		McpServers: nil,
 	}
 
 	// Use the base generator to create the project

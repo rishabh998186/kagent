@@ -269,12 +269,12 @@ func extractEnvVarsFromHeaders(mcpServers []common.McpServerType) []string {
 func ValidateAPIKey(modelProvider string) error {
 	// Get the environment variable name for the provider
 	apiKeyEnvVar := GetProviderAPIKey(v1alpha2.ModelProvider(modelProvider))
-	
+
 	// If no API key is required for this provider (e.g., Ollama, local models), skip validation
 	if apiKeyEnvVar == "" {
 		return nil
 	}
-	
+
 	// Check if the environment variable is set and non-empty
 	apiKey := os.Getenv(apiKeyEnvVar)
 	if apiKey == "" {
@@ -285,7 +285,7 @@ The model provider '%s' requires the %s environment variable to be set.
 Please set it before running this command:
   export %s="your-api-key-here"`, modelProvider, apiKeyEnvVar, apiKeyEnvVar)
 	}
-	
+
 	return nil
 }
 
