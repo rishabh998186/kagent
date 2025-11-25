@@ -4,9 +4,10 @@ FROM $DOCKER_REGISTRY/kagent-dev/kagent/kagent-adk:$VERSION
 
 WORKDIR /app
 
-COPY  {{.Name}}/ {{.Name}}/
-COPY  pyproject.toml pyproject.toml
-COPY  README.md README.md
+COPY .python-version .python-version
+COPY pyproject.toml pyproject.toml
+COPY README.md README.md
+COPY {{.Name}}/ {{.Name}}/
 
 RUN uv sync
 
