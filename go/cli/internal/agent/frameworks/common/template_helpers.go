@@ -33,8 +33,8 @@ func ToUpper(s string) string {
 }
 
 // TemplateHelpers returns a map of helper functions for templates
-func TemplateHelpers() map[string]interface{} {
-	return map[string]interface{}{
+func TemplateHelpers() map[string]any {
+	return map[string]any{
 		"ToPascalCase": ToPascalCase,
 		"ToUpper":      ToUpper,
 	}

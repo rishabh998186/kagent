@@ -168,7 +168,7 @@ func ReadTemplateFile(templatePath string) ([]byte, error) {
 }
 
 // RenderTemplate reads and renders a template file with the given data
-func RenderTemplate(templatePath string, data interface{}) (string, error) {
+func RenderTemplate(templatePath string, data any) (string, error) {
 	gen := adkgen.NewADKGenerator()
 	tmplBytes, err := fs.ReadFile(gen.TemplateFiles, templatePath)
 	if err != nil {
