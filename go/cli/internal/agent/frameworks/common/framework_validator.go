@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -19,10 +20,8 @@ func NewFrameworkValidator() *FrameworkValidator {
 // Validate checks if the framework is supported
 func (v *FrameworkValidator) Validate(framework string) error {
 	framework = strings.ToLower(framework)
-	for _, supported := range SupportedFrameworks {
-		if framework == supported {
-			return nil
-		}
+	if slices.Contains(SupportedFrameworks, framework) {
+		return nil
 	}
 	return fmt.Errorf("unsupported framework '%s'. Supported frameworks: %s",
 		framework, strings.Join(SupportedFrameworks, ", "))
