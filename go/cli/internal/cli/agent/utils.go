@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/kagent-dev/kagent/go/api/v1alpha2"
@@ -21,6 +21,11 @@ import (
 
 var (
 	ErrServerConnection = fmt.Errorf("error connecting to server. Please run 'install' command first")
+)
+
+const (
+	DockerComposeFilename = "docker-compose.yaml"
+	DockerComposeTemplate = "templates/docker-compose.yaml.tmpl"
 )
 
 func CheckServerConnection(ctx context.Context, client *client.ClientSet) error {
@@ -56,7 +61,7 @@ func NewPortForward(ctx context.Context, cfg *config.Config) (*PortForward, erro
 
 	client := cfg.Client()
 	var err error
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		err = CheckServerConnection(ctx, client)
 		if err == nil {
 			// Connection successful, port-forward is working
@@ -92,17 +97,17 @@ func StreamA2AEvents(ch <-chan protocol.StreamingMessageEvent, verbose bool) {
 				fmt.Fprintf(os.Stderr, "Error marshaling A2A event: %v\n", err)
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "%+v\n", string(json)) //nolint:errcheck
+			fmt.Fprintf(os.Stdout, "%+v\n", string(json))
 		} else {
 			json, err := event.MarshalJSON()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error marshaling A2A event: %v\n", err)
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "%+v\n", string(json)) //nolint:errcheck
+			fmt.Fprintf(os.Stdout, "%+v\n", string(json))
 		}
 	}
-	fmt.Fprintln(os.Stdout) //nolint:errcheck // Add a newline after streaming is complete
+	fmt.Fprintln(os.Stdout)
 }
 
 // ResolveProjectDir resolves the project directory to an absolute path
@@ -218,15 +223,15 @@ func RegenerateDockerCompose(projectDir string, manifest *common.AgentManifest, 
 	}
 
 	// Render the docker-compose.yaml template
-	renderedContent, err := RenderTemplate("templates/Docker-compose.yaml.tmpl", templateData)
+	renderedContent, err := RenderTemplate(DockerComposeTemplate, templateData)
 	if err != nil {
-		return fmt.Errorf("failed to render docker-compose.yaml template: %w", err)
+		return fmt.Errorf("failed to render %s template: %w", DockerComposeFilename, err)
 	}
 
 	// Write the docker-compose.yaml file
-	composePath := filepath.Join(projectDir, "docker-compose.yaml")
+	composePath := filepath.Join(projectDir, DockerComposeFilename)
 	if err := os.WriteFile(composePath, []byte(renderedContent), 0o644); err != nil {
-		return fmt.Errorf("failed to write docker-compose.yaml: %w", err)
+		return fmt.Errorf("failed to write %s: %w", DockerComposeFilename, err)
 	}
 
 	if verbose {
@@ -260,7 +265,7 @@ func extractEnvVarsFromHeaders(mcpServers []common.McpServerType) []string {
 	for varName := range envVarSet {
 		envVars = append(envVars, varName)
 	}
-	sort.Strings(envVars)
+	slices.Sort(envVars)
 
 	return envVars
 }
