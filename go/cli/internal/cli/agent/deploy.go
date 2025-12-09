@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/kagent-dev/kmcp/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -158,11 +159,12 @@ func buildAndPushImage(cfg *DeployCfg) error {
 
 	fmt.Println("Building Docker image...")
 	buildCfg := &BuildCfg{
-		ProjectDir: cfg.ProjectDir,
-		Image:      cfg.Image,
-		Push:       true, // Always push when deploying
-		Platform:   cfg.Platform,
-		Config:     cfg.Config,
+		ProjectDir:     cfg.ProjectDir,
+		Image:          cfg.Image,
+		Push:           true, // Always push when deploying
+		Platform:       cfg.Platform,
+		Config:         cfg.Config,
+		SkipMCPServers: true, // Don't build MCP servers during deploy
 	}
 
 	if err := BuildCmd(buildCfg); err != nil {
@@ -242,7 +244,7 @@ func extractEnvVarsFromManifest(manifest *common.AgentManifest) []string {
 	for varName := range envVarSet {
 		envVars = append(envVars, varName)
 	}
-	sort.Strings(envVars)
+	slices.Sort(envVars)
 
 	return envVars
 }
@@ -408,7 +410,7 @@ func createEnvFileSecret(ctx context.Context, k8sClient client.Client, namespace
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, existingSecret)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			if err := k8sClient.Create(ctx, secret); err != nil {
 				return fmt.Errorf("failed to create env file secret: %v", err)
 			}
@@ -443,7 +445,7 @@ func waitForDeployment(ctx context.Context, k8sClient client.Client, namespace, 
 	for {
 		select {
 		case <-timeoutTimer.C:
-			return nil, errors.NewNotFound(appsv1.Resource("deployment"), name)
+			return nil, apierrors.NewNotFound(appsv1.Resource("deployment"), name)
 		case <-ticker.C:
 			err := k8sClient.Get(ctx, types.NamespacedName{
 				Name:      name,
@@ -457,7 +459,7 @@ func waitForDeployment(ctx context.Context, k8sClient client.Client, namespace, 
 				return deployment, nil
 			}
 
-			if !errors.IsNotFound(err) {
+			if !apierrors.IsNotFound(err) {
 				return nil, fmt.Errorf("error checking for deployment: %v", err)
 			}
 		}
@@ -471,7 +473,7 @@ func restartAgentDeployment(ctx context.Context, k8sClient client.Client, cfg *D
 
 	_, err := waitForDeployment(ctx, k8sClient, namespace, deploymentName, 30*time.Second, cfg.Config)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			if IsVerbose(cfg.Config) {
 				fmt.Printf("Deployment '%s' not found after timeout, it may still be being created by the controller\n", deploymentName)
 			}
@@ -615,7 +617,7 @@ func createOrUpdateSecret(ctx context.Context, k8sClient client.Client, secret *
 	}, existingSecret)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Create new secret
 			if err := k8sClient.Create(ctx, secret); err != nil {
 				return fmt.Errorf("failed to create secret: %v", err)
@@ -709,7 +711,7 @@ func createOrUpdateAgent(ctx context.Context, k8sClient client.Client, agent *v1
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, existingAgent)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Agent does not exist, create it
 			if err := k8sClient.Create(ctx, agent); err != nil {
 				return fmt.Errorf("failed to create agent: %v", err)
@@ -808,7 +810,7 @@ func createOrUpdateRemoteMCPServer(ctx context.Context, k8sClient client.Client,
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, existingRemoteMCPServer)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Create new RemoteMCPServer
 			if err := k8sClient.Create(ctx, remoteMCPServer); err != nil {
 				return fmt.Errorf("failed to create RemoteMCPServer: %v", err)
@@ -896,7 +898,7 @@ func createOrUpdateMCPServer(ctx context.Context, k8sClient client.Client, mcpSe
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, existingMCPServer)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Create new MCPServer
 			if err := k8sClient.Create(ctx, mcpServerResource); err != nil {
 				return fmt.Errorf("failed to create MCPServer: %v", err)
@@ -1082,7 +1084,7 @@ func createOrUpdateEnvSecret(ctx context.Context, k8sClient client.Client, names
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, existingSecret)
 
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Secret doesn't exist, create it with all data
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1105,9 +1107,7 @@ func createOrUpdateEnvSecret(ctx context.Context, k8sClient client.Client, names
 	}
 
 	// Secret exists, merge the new data with existing data
-	for key, value := range secretData {
-		existingSecret.Data[key] = value
-	}
+	maps.Copy(existingSecret.Data, secretData)
 
 	if err := k8sClient.Update(ctx, existingSecret); err != nil {
 		return fmt.Errorf("failed to update existing secret: %v", err)

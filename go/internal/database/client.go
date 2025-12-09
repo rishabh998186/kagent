@@ -524,7 +524,6 @@ func (c *clientImpl) StoreCheckpointWrites(writes []*LangGraphCheckpointWrite) e
 
 // ListCheckpoints lists checkpoints for a thread, optionally filtered by beforeCheckpointID
 func (c *clientImpl) ListCheckpoints(userID, threadID, checkpointNS string, checkpointID *string, limit int) ([]*LangGraphCheckpointTuple, error) {
-
 	var checkpointTuples []*LangGraphCheckpointTuple
 	if err := c.db.Transaction(func(tx *gorm.DB) error {
 		query := c.db.Where(
@@ -584,7 +583,6 @@ func (c *clientImpl) DeleteCheckpoint(userID, threadID string) error {
 		}
 		return nil
 	})
-
 }
 
 // CrewAI methods

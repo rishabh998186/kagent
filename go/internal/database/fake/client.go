@@ -3,7 +3,7 @@ package fake
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -72,7 +72,6 @@ func (c *InMemoryFakeClient) GetPushNotification(taskID string, configID string)
 }
 
 func (c *InMemoryFakeClient) GetTask(taskID string) (*protocol.Task, error) {
-
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -89,7 +88,6 @@ func (c *InMemoryFakeClient) GetTask(taskID string) (*protocol.Task, error) {
 }
 
 func (c *InMemoryFakeClient) DeleteTask(taskID string) error {
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -326,8 +324,8 @@ func (c *InMemoryFakeClient) ListSessions(userID string) ([]database.Session, er
 			result = append(result, *session)
 		}
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
+	slices.SortStableFunc(result, func(i, j database.Session) int {
+		return strings.Compare(i.ID, j.ID)
 	})
 	return result, nil
 }
@@ -343,8 +341,8 @@ func (c *InMemoryFakeClient) ListSessionsForAgent(agentID string, userID string)
 			result = append(result, *session)
 		}
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
+	slices.SortStableFunc(result, func(i, j database.Session) int {
+		return strings.Compare(i.ID, j.ID)
 	})
 	return result, nil
 }
@@ -358,7 +356,9 @@ func (c *InMemoryFakeClient) ListAgents() ([]database.Agent, error) {
 	for _, agent := range c.agents {
 		result = append(result, *agent)
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
+	slices.SortStableFunc(result, func(i, j database.Agent) int {
+		return strings.Compare(i.ID, j.ID)
+	})
 	return result, nil
 }
 
@@ -371,8 +371,8 @@ func (c *InMemoryFakeClient) ListToolServers() ([]database.ToolServer, error) {
 	for _, server := range c.toolServers {
 		result = append(result, *server)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return (result[i].Name + result[i].GroupKind) < (result[j].Name + result[j].GroupKind)
+	slices.SortStableFunc(result, func(i, j database.ToolServer) int {
+		return strings.Compare(i.Name+i.GroupKind, j.Name+j.GroupKind)
 	})
 	return result, nil
 }
@@ -386,8 +386,8 @@ func (c *InMemoryFakeClient) ListTools() ([]database.Tool, error) {
 	for _, tool := range c.tools {
 		result = append(result, *tool)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return (result[i].ServerName + result[i].ID) < (result[j].ServerName + result[j].ID)
+	slices.SortStableFunc(result, func(i, j database.Tool) int {
+		return strings.Compare(i.ServerName+i.ID, j.ServerName+j.ID)
 	})
 	return result, nil
 }
@@ -409,8 +409,8 @@ func (c *InMemoryFakeClient) ListToolsForServer(serverName string, groupKind str
 		}
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return (result[i].ServerName + result[i].ID) < (result[j].ServerName + result[j].ID)
+	slices.SortStableFunc(result, func(i, j database.Tool) int {
+		return strings.Compare(i.ServerName+i.ID, j.ServerName+j.ID)
 	})
 	return result, nil
 }
@@ -764,7 +764,7 @@ func (c *InMemoryFakeClient) SearchCrewAIMemoryByTask(userID, threadID, taskDesc
 		if strings.HasPrefix(key, userID+":"+threadID) {
 			for _, memory := range memories {
 				// Parse the JSON memory data and search for task_description
-				var memoryData map[string]interface{}
+				var memoryData map[string]any
 				if err := json.Unmarshal([]byte(memory.MemoryData), &memoryData); err == nil {
 					if taskDesc, ok := memoryData["task_description"].(string); ok {
 						if strings.Contains(strings.ToLower(taskDesc), strings.ToLower(taskDescription)) {
@@ -781,29 +781,39 @@ func (c *InMemoryFakeClient) SearchCrewAIMemoryByTask(userID, threadID, taskDesc
 	}
 
 	// Sort by created_at DESC, then by score ASC (if score exists in JSON)
-	sort.Slice(allMemories, func(i, j int) bool {
+	slices.SortStableFunc(allMemories, func(i, j *database.CrewAIAgentMemory) int {
 		// First sort by created_at DESC (most recent first)
-		if !allMemories[i].CreatedAt.Equal(allMemories[j].CreatedAt) {
-			return allMemories[i].CreatedAt.After(allMemories[j].CreatedAt)
+		if !i.CreatedAt.Equal(j.CreatedAt) {
+			if i.CreatedAt.After(j.CreatedAt) {
+				return -1
+			} else {
+				return 1
+			}
 		}
 
 		// If created_at is equal, sort by score ASC
 		var scoreI, scoreJ float64
-		var memoryDataI, memoryDataJ map[string]interface{}
+		var memoryDataI, memoryDataJ map[string]any
 
-		if err := json.Unmarshal([]byte(allMemories[i].MemoryData), &memoryDataI); err == nil {
+		if err := json.Unmarshal([]byte(i.MemoryData), &memoryDataI); err == nil {
 			if score, ok := memoryDataI["score"].(float64); ok {
 				scoreI = score
 			}
 		}
 
-		if err := json.Unmarshal([]byte(allMemories[j].MemoryData), &memoryDataJ); err == nil {
+		if err := json.Unmarshal([]byte(j.MemoryData), &memoryDataJ); err == nil {
 			if score, ok := memoryDataJ["score"].(float64); ok {
 				scoreJ = score
 			}
 		}
 
-		return scoreI < scoreJ
+		if scoreI < scoreJ {
+			return -1
+		} else if scoreI > scoreJ {
+			return 1
+		} else {
+			return 0
+		}
 	})
 
 	// Apply limit
