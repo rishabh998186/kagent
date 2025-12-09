@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 // ProjectConfig defines the interface that project configuration must implement.
@@ -132,6 +133,7 @@ func (g *BaseGenerator) RenderTemplate(tmplContent string, data interface{}) (st
 		"upper":        strings.ToUpper,
 		"ToUpper":      strings.ToUpper,
 		"ToPascalCase": ToPascalCase,
+		"ToModuleName": ToModuleName,
 	}
 	tmpl, err := template.New("template").Funcs(funcMap).Parse(tmplContent)
 	if err != nil {
@@ -169,13 +171,33 @@ func (g *BaseGenerator) ReadTemplateFile(templatePath string) ([]byte, error) {
 	return fs.ReadFile(g.TemplateFiles, fullPath)
 }
 
-// ToPascalCase converts a string to PascalCase (e.g., "hello_world" -> "HelloWorld")
+// ToPascalCase converts a string to PascalCase (e.g., "hello-world" -> "HelloWorld")
+// Handles hyphens, underscores, and spaces as word separators
 func ToPascalCase(s string) string {
-	words := strings.Split(s, "_")
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '-' || r == '_' || r == ' '
+	})
+
 	for i, word := range words {
 		if len(word) > 0 {
-			words[i] = strings.ToUpper(word[:1]) + word[1:]
+			// Capitalize first letter, lowercase rest
+			runes := []rune(word)
+			runes[0] = unicode.ToUpper(runes[0])
+			for j := 1; j < len(runes); j++ {
+				runes[j] = unicode.ToLower(runes[j])
+			}
+			words[i] = string(runes)
 		}
 	}
+
 	return strings.Join(words, "")
+}
+
+// ToModuleName converts a string to a valid Python module name (e.g., "hello-world" -> "hello_world")
+// Replaces hyphens and spaces with underscores
+func ToModuleName(s string) string {
+	// Replace hyphens and spaces with underscores
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, " ", "_")
+	return s
 }

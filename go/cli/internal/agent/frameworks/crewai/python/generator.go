@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/kagent-dev/kagent/go/cli/internal/agent/frameworks/common"
 )
@@ -39,7 +40,9 @@ func (g *CrewAIGenerator) GetLanguage() string {
 // Generate creates a new Python CrewAI project
 func (g *CrewAIGenerator) Generate(projectDir, agentName, instruction, modelProvider, modelName, description string, verbose bool, kagentVersion string) error {
 	// Create the main project directory structure
-	subDir := filepath.Join(projectDir, agentName)
+	// Convert agent name to valid Python module name (replace hyphens with underscores)
+	moduleName := strings.ReplaceAll(strings.ReplaceAll(agentName, "-", "_"), " ", "_")
+	subDir := filepath.Join(projectDir, moduleName)
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		return fmt.Errorf("failed to create subdirectory: %v", err)
 	}
